@@ -1,0 +1,8 @@
+{
+  "API_URL": "http://192.168.1.50:8000",
+  "API_PORT": 8000,
+  "DASHBOARD_URL": "http://192.168.1.50:8000",
+  "SENSORS_UPDATE_INTERVAL": 2,
+  "MONITORING_UPDATE_INTERVAL": 2,
+  "ANTHROPIC_API_KEY": "sk-ant-your-key-here"
+}

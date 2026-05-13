@@ -1,148 +1,427 @@
-# IoT VPN Shield 🛡️
-**Sécurisation d'un réseau de capteurs IoT par VPN avec monitoring en temps réel**
-Compétition RSSP 2026 — ENSA Marrakech
+# 🛡️ IoT VPN Shield — RSSP 2026
+
+Sécurisation d'un réseau de capteurs IoT par VPN avec monitoring en temps réel.
+Dashboard ThingsBoard-inspired avec AI Assistant intégré.
+
+**Compétition**: ENSA Marrakech — RSSP 2026  
+**Équipe**: 4 membres  
+**Deadline**: 16 mai 2026  
+**Format démo**: 7 min présentation + 3 min démo + 5 min Q&A
 
 ---
 
-## Structure du projet
+## 📋 Architecture
+
 ```
-iot-vpn-shield/
-├── api/
-│   ├── main.py                ← API FastAPI (machine API)
-│   ├── requirements.txt       ← dépendances Python
-│   ├── iot_sender.py          ← VM IoT client
-│   ├── monitoring_sender.py   ← VM Monitoring
-│   ├── kali_sender.py         ← VM Kali (attaques)
-│   └── config.example.py     ← modèle de configuration
-├── dashboard/
-│   └── index.html             ← dashboard web temps réel
-├── .gitignore
-└── README.md
+┌─────────────────────────────────────┐
+│     API FastAPI + WebSocket         │  Backend
+│  (Machine Machine: 192.168.1.50)    │
+└────────┬────────┬────────┬──────────┘
+         │        │        │
+    ┌────▼──┐ ┌──▼──┐ ┌───▼──┐
+    │ VM 1  │ │ VM2 │ │ VM3  │ ┌─────┐
+    │OpenVPN│ │ IoT │ │Monit.│ │ VM4 │
+    │WG     │ │Sect.│ │ VPN  │ │Kali │
+    └───────┘ └─────┘ └──────┘ └─────┘
+         │        │        │        │
+         └────────┴────────┴────────┘
+                  │
+           ┌──────▼────────┐
+           │   Dashboard   │
+           │  (HTML/JS)    │
+           │  ThingsBoard  │
+           │  + AI Agent   │
+           └───────────────┘
 ```
+
+### Rôles de l'équipe
+
+| Rôle | VM | Responsabilités |
+|------|-----|-----------------|
+| **Membre 1** | VM1 | Serveur VPN (OpenVPN + WireGuard) |
+| **Membre 2** | VM2 | Client IoT — scripts Python + capteurs |
+| **Membre 3** | VM3 | Monitoring VPN — métriques CPU/latence |
+| **Membre 4** | VM4 | Kali Linux — attaques de test |
 
 ---
 
-## 🚀 GUIDE PAR RÔLE
+## 🚀 Démarrage Rapide
 
-### 👤 Machine API (responsable dashboard)
+### 1️⃣ Machine API (N'importe où — 192.168.1.50)
 
 ```bash
-# 1. Installer les dépendances
-cd api
+# Clone le repo
+git clone https://github.com/saad8-byte/Projet-Reseau.git
+cd Projet-Reseau
+
+# Crée config.json
+cp config.example.json config.json
+# Édite avec ton IP API
+
+# Installe dépendances
 pip install -r requirements.txt
 
-# 2. Lancer l'API
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-# 3. Trouver ton IP et la partager avec l'équipe
-ip a | grep "inet 192"      # Linux
-ipconfig | findstr "IPv4"   # Windows
-
-# 4. Ouvrir le dashboard
-# → Ouvre dashboard/index.html dans le navigateur
-# → Clique ⚙ en bas à droite
-# → Entre l'IP de cette machine + port 8000
-# → Clique CONNECTER
+# Lance l'API
+uvicorn backend/main.py --host 0.0.0.0 --port 8000
 ```
 
-Vérifier que l'API tourne : http://localhost:8000/status
+**La console doit afficher:**
+```
+Uvicorn running on http://0.0.0.0:8000
+Application startup complete
+```
 
----
+### 2️⃣ Dashboard (Browser)
 
-### 🌡️ VM IoT Client (capteurs)
+Ouvre: **http://192.168.1.50:8000**
+
+- Dashboard avec capteurs en temps réel
+- VPN Stats avec graphiques
+- AI Assistant (coin bas-droit 🤖)
+- Log attaques en direct
+
+### 3️⃣ VM IoT — Capteurs (VM2)
 
 ```bash
-# 1. Cloner le repo
-git clone https://github.com/USERNAME/iot-vpn-shield.git
-cd iot-vpn-shield/api
+cd scripts
 
-# 2. Créer ton fichier de config (jamais pushé sur GitHub)
-cp config.example.py config.py
-# Édite config.py → remplace l'IP par celle de la machine API
+# Crée config.json
+cp ../config.example.json config.json
+# Édite API_URL = "http://192.168.1.50:8000"
 
-# 3. Installer les dépendances
-pip install requests
-
-# 4. Lancer
+# Lance les capteurs
 python iot_sender.py
 ```
 
-Tu devrais voir :
+**Résultat:**
 ```
-[✓] API en ligne — 1 client(s) WebSocket connecté(s)
-── Cycle 1 ──────────────────────
-[✓] IOT-01 = 23.2 °C  (online)  → 1 dashboard(s)
-[✓] IOT-02 = 58.3 %   (online)  → 1 dashboard(s)
+[✓] IOT-01 = 23.4 °C (online)
+[✓] IOT-02 = 58.2 % (online)
 ...
 ```
 
-**Personnaliser les capteurs** — édite la liste `SENSORS` dans `iot_sender.py` :
-```python
-SENSORS = [
-    {"id": "IOT-01", "name": "Ton capteur", "base": 25.0, "unit": "°C", "noise": 0.5},
-    # ajoute autant de capteurs que tu veux
-]
-```
+Le dashboard **doit afficher les capteurs** en temps réel avec les sparklines.
 
----
-
-### 📊 VM Monitoring (métriques VPN)
+### 4️⃣ VM Monitoring — Métriques VPN (VM3)
 
 ```bash
-# 1. Cloner + config (même procédure que IoT)
-cp config.example.py config.py   # édite avec l'IP API
-
-# 2. Lancer
-pip install requests
+cd scripts
 python monitoring_sender.py
-# → Choisir : wireguard / openvpn / none
+
+# Quand demandé:
+# VPN actif ? wireguard
 ```
 
----
+**Résultat:**
+- Latence, CPU, Débit en temps réel
+- Graphiques VPN Stats mis à jour
 
-### ⚡ VM Kali Linux (attaques)
+### 5️⃣ VM Kali — Attaques (VM4)
 
 ```bash
-# 1. Config (même procédure)
-cp config.example.py config.py
-
-# 2. Lancer
-pip install requests
+cd scripts
 python kali_sender.py
-# → Menu interactif : choisir l'attaque + si VPN actif
+
+# Menu interactif:
+# 1) Scan Nmap
+# 2) ARP Spoofing
+# 3) DoS Flood
+# 4) Wireshark
+# 5) Séquence démo (complète)
+```
+
+Le **journal des attaques** apparaît sur le dashboard.
+
+---
+
+## 📁 Structure des Fichiers
+
+```
+iot-vpn-shield/
+├── dashboard/
+│   └── index.html                 # Dashboard complet (ThingsBoard)
+├── backend/
+│   └── main.py                    # API FastAPI + WebSocket
+├── scripts/
+│   ├── iot_sender.py              # Envoie données capteurs
+│   ├── monitoring_sender.py       # Envoie métriques VPN
+│   └── kali_sender.py             # Envoie attaques
+├── docs/
+│   ├── SETUP.md                   # Guide détaillé
+│   └── API.md                     # Documentation API
+├── config.example.json            # Configuration template
+├── requirements.txt               # Dépendances Python
+├── .gitignore                     # Fichiers à ignorer
+└── README.md                      # Ce fichier
 ```
 
 ---
 
-## 🔧 Dépannage
+## 🔌 API Endpoints
 
-| Problème | Solution |
-|---|---|
-| `Connection refused` | L'API ne tourne pas ou mauvaise IP dans config.py |
-| `Network unreachable` | VMs pas sur le même réseau, vérifier VirtualBox |
-| Dashboard ne se connecte pas | Clique ⚙, vérifie l'IP, clique CONNECTER |
-| `ModuleNotFoundError: requests` | `pip install requests` |
+### REST POST Endpoints
 
-**Tester manuellement l'API :**
 ```bash
-# Depuis n'importe quelle VM
-curl http://[IP_API]:8000/status
+# Ajouter un capteur
+POST /api/sensor
+{
+  "sensor_id": "IOT-01",
+  "name": "Température Bureau",
+  "ip": "192.168.1.10",
+  "value": 23.4,
+  "unit": "°C",
+  "status": "online",
+  "vpn_active": true
+}
 
-# Envoyer un capteur test
-curl -X POST http://[IP_API]:8000/sensor-event \
-  -H "Content-Type: application/json" \
-  -d '{"sensor_id":"TEST","name":"Test","value":42.0,"unit":"°C","status":"online"}'
+# Ajouter une attaque
+POST /api/attack
+{
+  "type": "NMAP",
+  "description": "Scan découverte",
+  "target": "10.0.0.0/24",
+  "blocked": false
+}
+
+# Ajouter une métrique VPN
+POST /api/metrics
+{
+  "latency_ms": 12.5,
+  "cpu_percent": 3.1,
+  "bandwidth_mbps": 94.2,
+  "packets_per_sec": 1200
+}
+```
+
+### GET Endpoints
+
+```bash
+# Status de l'API
+GET /api/status
+→ { "status": "running", "ws_clients": 2, ... }
+
+# Health check
+GET /api/health
+→ { "status": "healthy" }
+```
+
+### WebSocket
+
+```javascript
+// Client JavaScript
+const ws = new WebSocket('ws://192.168.1.50:8000/ws');
+ws.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  console.log(data); // { type: 'sensor', time: '14:32:15', data: {...} }
+};
 ```
 
 ---
 
-## 🌐 Travailler à distance (ngrok)
+## ⚙️ Configuration
 
-Si vous n'êtes pas sur le même réseau :
-```bash
-# Sur la machine API
-ngrok http 8000
-# → Donne une URL publique ex: https://abc123.ngrok.io
-# Partagez cette URL avec l'équipe
-# Dans config.py : API_URL = "https://abc123.ngrok.io"
+Copie `config.example.json` → `config.json` et édite:
+
+```json
+{
+  "API_URL": "http://192.168.1.50:8000",     # ← IP de la machine API
+  "API_PORT": 8000,
+  "DASHBOARD_URL": "http://192.168.1.50:8000",
+  "SENSORS_UPDATE_INTERVAL": 2,
+  "MONITORING_UPDATE_INTERVAL": 2,
+  "ANTHROPIC_API_KEY": "sk-ant-..."          # ← Pour AI Agent
+}
 ```
+
+---
+
+## 🎮 Dashboard Features
+
+### 📊 Pages
+
+1. **Dashboard** — Vue globale des capteurs + stats clés
+2. **Capteurs** — Ajouter/gérer capteurs manuellement
+3. **VPN Stats** — Métriques VPN détaillées avec graphiques 24h
+4. **Sécurité** — Journal des attaques Kali
+
+### 🤖 AI Assistant
+
+Coin bas-droit: bouton 🤖 → chat interactif  
+Connecte avec Anthropic Claude pour aide:
+- Ajouter capteurs naturellement
+- Questions sur la sécurité IoT
+- Explications attaques VPN
+
+**Configuration AI:** Édite `config.example.json` avec ta clé API Anthropic
+
+### 📈 Graphiques
+
+- **Sparklines** sur chaque widget (20 points d'historique)
+- **Graphiques 24h** sur page VPN Stats (60px+ hauteur)
+- **Charts canvas** (pas de dépendances externes)
+- **Mise à jour live** toutes les 2.5s
+
+---
+
+## 🧪 Dépannage
+
+### ❌ Erreur: "Connection refused"
+
+```bash
+# Vérifie que l'API tourne
+lsof -i :8000
+
+# Ou tente d'accéder à l'API:
+curl http://192.168.1.50:8000/api/status
+```
+
+### ❌ Les capteurs n'apparaissent pas
+
+1. Vérifie `config.json` → `API_URL` correcte
+2. Teste manuellement:
+   ```bash
+   curl -X POST http://192.168.1.50:8000/api/sensor \
+     -H "Content-Type: application/json" \
+     -d '{"sensor_id":"TEST","name":"Test","ip":"10.0.0.1","value":25,"unit":"°C","status":"online","vpn_active":true}'
+   ```
+
+### ❌ AI Assistant ne fonctionne pas
+
+- Clé API Anthropic manquante → clique "Plus tard" et rentre-la quand demandé
+- Clé invalide → supprime `localStorage` → recharde la page
+
+---
+
+## 📊 Dépendances
+
+### Backend
+- **FastAPI** 0.104.1 — API web moderne
+- **Uvicorn** 0.24.0 — Serveur ASGI
+- **Pydantic** 2.4.2 — Validation données
+
+### Scripts
+- **requests** 2.31.0 — HTTP client
+
+### Frontend
+- HTML5 + CSS3 + Vanilla JS (zéro dépendances)
+
+Installe tout:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 🔒 Sécurité
+
+### Best Practices
+
+- ✅ `config.json` ignée dans `.gitignore` → ne push jamais les IPs sensibles
+- ✅ API en CORS wildcard pour démo — **à restreindre en prod**
+- ✅ WebSocket sans auth pour démo — **ajoute tokens en prod**
+- ✅ Clés API jamais en dur dans le code
+
+---
+
+## 📝 Pour la Présentation
+
+### Slides PowerPoint
+
+Voir `docs/presentation.pptx` (généré séparément)
+
+### Demo Flow (7 min)
+
+1. **Intro 1 min** — Problème IoT + Solution
+2. **Dashboard 2 min** — Montrer interface ThingsBoard, capteurs en direct
+3. **Attaques 2 min** — Lancer Kali, montrer SANS VPN (succès), AVEC VPN (bloqué)
+4. **VPN Stats 1 min** — Graphiques latence/CPU (WireGuard > OpenVPN)
+5. **AI Chat 1 min** — Ajouter capteur par la parole/texte naturel
+
+### Points Clés à Souligner
+
+- ✨ Interface moderne (ThingsBoard-style)
+- ✨ Temps réel (WebSocket)
+- ✨ Comparaison OpenVPN vs WireGuard
+- ✨ Sécurité prouvée (attaques Kali)
+- ✨ AI intégré (Claude)
+
+---
+
+## 👥 Team Workflow
+
+### Chaque coéquipier:
+
+```bash
+# 1) Clone le repo
+git clone https://github.com/saad8-byte/Projet-Reseau.git
+
+# 2) Crée config.json (local)
+cp config.example.json config.json
+# Édite avec l'IP API de la machine centrale
+
+# 3) Installe dépendances
+pip install -r requirements.txt
+
+# 4) Lance ton script:
+python scripts/iot_sender.py          # Membre 2
+python scripts/monitoring_sender.py   # Membre 3
+python scripts/kali_sender.py         # Membre 4
+```
+
+### Chef de projet (Membre 4 — saad8-byte):
+
+```bash
+# Lance l'API
+uvicorn backend/main.py --host 0.0.0.0 --port 8000
+
+# Ouvre le dashboard
+# http://192.168.1.50:8000
+
+# Monitor les logs
+# (voir console de l'API pour [SENSOR], [ATTACK], [METRICS])
+```
+
+---
+
+## 📚 Documentation
+
+- `docs/SETUP.md` — Guide détaillé d'installation
+- `docs/API.md` — Référence complète API
+- Code commenté en français dans les scripts
+
+---
+
+## ✅ Checklist Avant Présentation
+
+- [ ] API tourne sur machine centrale
+- [ ] Dashboard accessible (http://machine:8000)
+- [ ] Capteurs envoient des données (IoT sender lance)
+- [ ] VPN Stats affiche des graphiques
+- [ ] Attaques Kali s'envoient (journal à jour)
+- [ ] AI Assistant configuré (clé API rentrée)
+- [ ] Les 3 scripts Python testés
+- [ ] PowerPoint prêt
+- [ ] Internet stable (démo live!)
+
+---
+
+## 🎯 Objectifs Atteints
+
+✅ Sécurisation IoT par VPN  
+✅ Dashboard temps réel (ThingsBoard)  
+✅ Monitoring VPN (latence, CPU, débit)  
+✅ Tests attaques (Kali + résultats)  
+✅ Comparaison OpenVPN vs WireGuard  
+✅ AI Assistant intégré  
+✅ Projet scalable (architecture claire)  
+✅ Code commenté + documentation
+
+---
+
+## 📧 Support
+
+**Questions?** Ouvre une issue sur GitHub ou contacte saad8-byte
+
+---
+
+**Made with ❤️ for RSSP 2026 — ENSA Marrakech**

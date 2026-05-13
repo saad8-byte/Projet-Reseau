@@ -3,25 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IoT VPN Shield — Dashboard</title>
+<title>IoT VPN Security — ThingsBoard Style</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #080c10;
-  --bg2: #0d1318;
-  --bg3: #111820;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.13);
-  --text: #e8edf2;
-  --muted: #5a6a7a;
-  --accent: #00e5ff;
-  --accent2: #00ff88;
-  --danger: #ff4455;
+  --bg: #0a0e14;
+  --bg2: #0f1419;
+  --bg3: #131820;
+  --card: #0d1621;
+  --border: rgba(0,200,224,0.15);
+  --border2: rgba(255,255,255,0.08);
+  --text: #e0e8f0;
+  --text-sub: #7a8a9a;
+  --accent: #00c8e0;
+  --accent2: #00e096;
+  --danger: #ff5566;
   --warn: #ffaa00;
-  --purple: #a78bfa;
   --mono: 'Space Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
+  --sans: 'Inter', sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,1244 +30,1723 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 14px;
+  font-size: 13px;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
-/* Grid bg */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Glow top */
-body::after {
-  content: '';
-  position: fixed;
-  top: -200px; left: 50%;
-  transform: translateX(-50%);
-  width: 600px; height: 400px;
-  background: radial-gradient(ellipse, rgba(0,229,255,0.06) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
-
-/* ── HEADER ── */
+/* ─── HEADER ─── */
 header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 32px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(8,12,16,0.8);
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 56px;
+  background: rgba(10,14,20,0.95);
   backdrop-filter: blur(12px);
-  position: sticky; top: 0; z-index: 100;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 100;
 }
 
 .logo {
-  display: flex; align-items: center; gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .logo-icon {
-  width: 32px; height: 32px;
+  width: 32px;
+  height: 32px;
   border: 1.5px solid var(--accent);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-}
-.logo-icon::before {
-  content: '';
-  width: 12px; height: 14px;
-  background: var(--accent);
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  opacity: 0.9;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 
-.logo h1 { font-family: var(--mono); font-size: 14px; font-weight: 700; letter-spacing: 0.08em; }
+.logo h1 {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .logo span { color: var(--accent); }
 
-.header-status {
-  display: flex; align-items: center; gap: 20px;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.conn-badge {
-  display: flex; align-items: center; gap: 6px;
-  font-family: var(--mono); font-size: 11px; color: var(--muted);
-}
-.conn-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--muted);
-  transition: background 0.3s;
-}
-.conn-dot.live { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); animation: pulse-dot 2s infinite; }
-.conn-dot.error { background: var(--danger); }
-
-@keyframes pulse-dot {
-  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+.vpn-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-sub);
 }
 
-.time-display {
-  font-family: var(--mono); font-size: 12px; color: var(--muted);
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-sub);
+  animation: pulse 2s infinite;
 }
 
-/* ── LAYOUT ── */
-.main { display: flex; flex: 1; }
+.status-dot.active { background: var(--accent2); }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ─── LAYOUT ─── */
+.container {
+  display: flex;
+  margin-top: 56px;
+  height: calc(100vh - 56px);
+}
+
+/* ─── SIDEBAR ─── */
 .sidebar {
-  width: 220px; flex-shrink: 0;
+  width: 240px;
+  background: var(--bg2);
   border-right: 1px solid var(--border);
-  padding: 24px 0;
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.nav-section {
+  padding: 20px 16px 12px;
+}
+
+.nav-section-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 
 .nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
   cursor: pointer;
-  color: var(--muted);
-  font-size: 13px; font-weight: 500;
-  transition: all 0.2s;
+  color: var(--text-sub);
+  font-size: 13px;
   border-left: 2px solid transparent;
-  user-select: none;
-}
-.nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,229,255,0.04); }
-
-.nav-icon { font-size: 15px; width: 18px; text-align: center; }
-
-.nav-section {
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em;
-  color: var(--muted); padding: 14px 20px 4px; text-transform: uppercase;
+  transition: all 0.2s;
+  border-radius: 4px;
+  margin: 0 4px;
 }
 
-/* ── CONTENT ── */
+.nav-item:hover {
+  color: var(--text);
+  background: rgba(0,200,224,0.08);
+}
+
+.nav-item.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: rgba(0,200,224,0.1);
+}
+
+.nav-icon {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+/* ─── STATS SECTION ─── */
+.stats-section {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.stats-section-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border2);
+}
+
+.stat-item:last-child { border-bottom: none; }
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-sub);
+}
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-value.green { color: var(--accent2); }
+.stat-value.warn { color: var(--warn); }
+.stat-value.danger { color: var(--danger); }
+
+/* ─── MAIN CONTENT ─── */
 .content {
-  flex: 1; padding: 28px 32px;
-  display: flex; flex-direction: column; gap: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.page-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.page-subtitle {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+.page-content {
+  flex: 1;
+  padding: 24px;
   overflow-y: auto;
 }
 
 .page { display: none; }
-.page.active { display: flex; flex-direction: column; gap: 24px; }
+.page.active { display: flex; flex-direction: column; }
 
-/* ── SECTION HEADER ── */
-.section-header {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.section-title {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
-  color: var(--muted); text-transform: uppercase;
-}
-
-/* ── STAT CARDS ROW ── */
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-
-.stat-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px 20px;
-  display: flex; flex-direction: column; gap: 8px;
-  transition: border-color 0.2s;
-}
-.stat-card:hover { border-color: var(--border2); }
-
-.stat-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.05em; }
-.stat-value { font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1; }
-.stat-sub { font-size: 11px; color: var(--muted); }
-
-.stat-value.green { color: var(--accent2); }
-.stat-value.cyan { color: var(--accent); }
-.stat-value.red { color: var(--danger); }
-.stat-value.warn { color: var(--warn); }
-
-/* ── VPN CONTROL PANEL ── */
-.vpn-panel {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 24px;
-  display: flex; gap: 24px; align-items: stretch;
+/* ─── GRID DASHBOARD ─── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.vpn-protocol {
-  flex: 1;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 14px;
-  transition: border-color 0.3s;
-}
-.vpn-protocol.active-vpn { border-color: var(--accent); }
-.vpn-protocol.active-vpn .vpn-name { color: var(--accent); }
-
-.vpn-header { display: flex; align-items: center; justify-content: space-between; }
-.vpn-name { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--text); }
-.vpn-badge {
-  font-size: 10px; font-family: var(--mono); padding: 3px 8px;
-  border-radius: 4px; letter-spacing: 0.05em;
-}
-.vpn-badge.on { background: rgba(0,255,136,0.12); color: var(--accent2); border: 1px solid rgba(0,255,136,0.2); }
-.vpn-badge.off { background: rgba(90,106,122,0.15); color: var(--muted); border: 1px solid rgba(90,106,122,0.2); }
-
-.vpn-metrics { display: flex; flex-direction: column; gap: 6px; }
-.vpn-metric-row { display: flex; justify-content: space-between; align-items: center; }
-.vpn-metric-label { font-size: 12px; color: var(--muted); }
-.vpn-metric-val { font-family: var(--mono); font-size: 12px; color: var(--text); }
-
-.vpn-btn {
-  width: 100%; padding: 10px;
-  border-radius: 8px; border: none; cursor: pointer;
-  font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
+.widget {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   transition: all 0.2s;
 }
-.vpn-btn.start {
-  background: rgba(0,229,255,0.1); color: var(--accent);
-  border: 1px solid rgba(0,229,255,0.25);
-}
-.vpn-btn.start:hover { background: rgba(0,229,255,0.18); }
-.vpn-btn.stop {
-  background: rgba(255,68,85,0.1); color: var(--danger);
-  border: 1px solid rgba(255,68,85,0.25);
-}
-.vpn-btn.stop:hover { background: rgba(255,68,85,0.18); }
 
-.vpn-divider {
-  width: 1px; background: var(--border);
-  flex-shrink: 0; margin: 0 4px;
+.widget:hover {
+  border-color: var(--border);
+  box-shadow: 0 4px 12px rgba(0,200,224,0.08);
 }
 
-/* ── SENSOR GRID ── */
-.sensors-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
 
-.sensor-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  display: flex; flex-direction: column; gap: 10px;
-  transition: all 0.3s;
+.widget-title {
+  font-size: 12px;
+  color: var(--text-sub);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.widget-icon {
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+.widget-value {
+  font-family: var(--mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.widget-value.green { color: var(--accent2); }
+.widget-value.warn { color: var(--warn); }
+.widget-value.danger { color: var(--danger); }
+
+.widget-unit {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-top: 4px;
+}
+
+.widget-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border2);
+}
+
+.widget-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-sub);
+}
+
+.widget-status-dot.online { background: var(--accent2); }
+.widget-status-dot.offline { background: var(--danger); }
+
+/* ─── SPARKLINE ─── */
+.sparkline-chart {
+  width: 100%;
+  height: 40px;
+  margin-top: 8px;
+  border-radius: 4px;
+  background: rgba(0,200,224,0.05);
+  padding: 4px;
+  border: 1px solid var(--border2);
+}
+
+.sparkline-chart canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── PROGRESS BAR ─── */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.3s;
+  border-radius: 3px;
+}
+
+/* ─── FORM SECTION ─── */
+.form-card {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 400px;
+}
+
+.form-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.form-label {
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.form-input {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--sans);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--accent);
+  background: rgba(0,200,224,0.05);
+}
+
+.form-input::placeholder {
+  color: var(--text-sub);
+}
+
+.form-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  position: relative; overflow: hidden;
+  font-weight: 600;
+  font-size: 12px;
+  font-family: var(--sans);
+  transition: all 0.2s;
 }
-.sensor-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: var(--muted); transition: background 0.3s;
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
 }
-.sensor-card.online::before { background: var(--accent2); }
-.sensor-card.warning::before { background: var(--warn); }
-.sensor-card.offline::before { background: var(--danger); }
 
-.sensor-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.btn-primary:hover { background: var(--accent2); }
 
-.sensor-top { display: flex; align-items: center; justify-content: space-between; }
-.sensor-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-.sensor-status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--muted);
+.btn-secondary {
+  background: var(--bg3);
+  color: var(--text-sub);
+  border: 1px solid var(--border2);
 }
-.sensor-card.online .sensor-status-dot { background: var(--accent2); animation: pulse-dot 2s infinite; }
-.sensor-card.warning .sensor-status-dot { background: var(--warn); animation: pulse-dot 1s infinite; }
-.sensor-card.offline .sensor-status-dot { background: var(--danger); }
 
-.sensor-name { font-size: 14px; font-weight: 600; color: var(--text); }
-.sensor-val { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--accent); }
-.sensor-val span { font-size: 12px; color: var(--muted); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--text); }
 
-.sensor-meta { display: flex; justify-content: space-between; }
-.sensor-meta-item { font-size: 11px; color: var(--muted); }
-
-/* ── SPARKLINE ── */
-.sparkline { height: 28px; }
-.sparkline canvas { width: 100%; height: 28px; }
-
-/* ── ATTACKS LOG ── */
-.attacks-panel {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+/* ─── ATTACK LOG ─── */
+.attack-log {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
   overflow: hidden;
 }
 
-.attacks-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
+.log-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.attacks-title { font-family: var(--mono); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.live-badge {
-  font-size: 9px; padding: 2px 6px; border-radius: 3px;
-  background: rgba(255,68,85,0.12); color: var(--danger);
-  border: 1px solid rgba(255,68,85,0.2);
-  animation: pulse-dot 1.5s infinite;
+.log-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.attacks-list {
-  max-height: 280px; overflow-y: auto;
-  font-family: var(--mono); font-size: 12px;
+.log-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255,85,102,0.12);
+  color: var(--danger);
+  border: 1px solid rgba(255,85,102,0.2);
+  animation: pulse 1.5s infinite;
 }
-.attacks-list::-webkit-scrollbar { width: 4px; }
-.attacks-list::-webkit-scrollbar-track { background: transparent; }
-.attacks-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-.attack-row {
-  display: grid; grid-template-columns: 80px 110px 1fr 90px 80px;
-  padding: 10px 20px; gap: 12px; align-items: center;
-  border-bottom: 1px solid var(--border);
-  animation: slideIn 0.3s ease;
+.log-list {
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.log-columns {
+  display: grid;
+  grid-template-columns: 70px 90px 1fr 80px 70px;
+  padding: 10px 16px;
+  gap: 10px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border2);
+  color: var(--text-sub);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 70px 90px 1fr 80px 70px;
+  padding: 10px 16px;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--border2);
   transition: background 0.2s;
 }
-.attack-row:hover { background: rgba(255,255,255,0.02); }
-.attack-row:last-child { border-bottom: none; }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
+.log-row:hover { background: rgba(255,255,255,0.02); }
+.log-row:last-child { border-bottom: none; }
+
+.log-time { color: var(--text-sub); }
+.log-type { font-weight: 700; }
+.log-type.arp { color: var(--danger); }
+.log-type.nmap { color: var(--warn); }
+.log-type.dos { color: #ff6b6b; }
+.log-type.wshark { color: #a78bfa; }
+.log-desc { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-target { color: var(--text-sub); }
+.log-result { font-weight: 700; text-align: center; }
+.log-result.blocked { color: var(--accent2); }
+.log-result.success { color: var(--danger); }
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-sub);
 }
 
-.atk-time { color: var(--muted); font-size: 11px; }
-.atk-type { }
-.atk-type.arp    { color: var(--danger); }
-.atk-type.nmap   { color: var(--warn); }
-.atk-type.dos    { color: #ff6b6b; }
-.atk-type.wshark { color: var(--purple); }
-.atk-desc { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.atk-target { color: var(--muted); font-size: 11px; }
-.atk-result {
-  font-size: 10px; padding: 2px 7px; border-radius: 3px; text-align: center;
-}
-.atk-result.blocked { background: rgba(0,255,136,0.1); color: var(--accent2); border: 1px solid rgba(0,255,136,0.2); }
-.atk-result.success { background: rgba(255,68,85,0.1); color: var(--danger); border: 1px solid rgba(255,68,85,0.2); }
-.atk-result.partial { background: rgba(255,170,0,0.1); color: var(--warn); border: 1px solid rgba(255,170,0,0.2); }
-
-.attacks-cols {
-  display: grid; grid-template-columns: 80px 110px 1fr 90px 80px;
-  padding: 8px 20px; gap: 12px;
-  background: var(--bg3);
-  border-bottom: 1px solid var(--border);
-  font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
-  font-family: var(--mono);
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
 }
 
-/* ── MONITORING CHARTS ── */
-.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* ─── FLOATING AI BUTTON ─── */
+.ai-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: var(--bg);
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,200,224,0.3);
+  transition: all 0.2s;
+  z-index: 90;
+}
 
-.chart-card {
-  background: var(--bg2);
+.ai-fab:hover {
+  background: var(--accent2);
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0,224,150,0.3);
+}
+
+/* ─── AI CHAT PANEL ─── */
+.ai-panel {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  width: 380px;
+  height: 500px;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 18px 20px;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 89;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition: all 0.3s;
 }
-.chart-card-header { display: flex; align-items: center; justify-content: space-between; }
-.chart-title { font-family: var(--mono); font-size: 12px; color: var(--text); font-weight: 700; }
-.chart-val { font-family: var(--mono); font-size: 12px; }
-.chart-val.cyan { color: var(--accent); }
-.chart-val.green { color: var(--accent2); }
 
-.chart-area { height: 80px; position: relative; }
-.chart-area canvas { width: 100%; height: 80px; }
-
-/* ── TOGGLE SWITCH ── */
-.toggle-wrap { display: flex; align-items: center; gap: 8px; }
-.toggle { position: relative; width: 36px; height: 20px; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-  position: absolute; inset: 0;
-  background: var(--bg3); border: 1px solid var(--border2);
-  border-radius: 10px; cursor: pointer; transition: all 0.2s;
+.ai-panel.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
-.toggle-slider::before {
-  content: ''; position: absolute;
-  width: 14px; height: 14px; border-radius: 50%;
-  top: 2px; left: 2px;
-  background: var(--muted); transition: all 0.2s;
-}
-.toggle input:checked + .toggle-slider { background: rgba(0,229,255,0.15); border-color: var(--accent); }
-.toggle input:checked + .toggle-slider::before { transform: translateX(16px); background: var(--accent); }
 
-/* ── NETWORK MAP ── */
-.network-map {
-  background: var(--bg2);
+.ai-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ai-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-icon {
+  font-size: 16px;
+}
+
+.ai-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ai-close {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-size: 18px;
+  transition: color 0.2s;
+}
+
+.ai-close:hover { color: var(--text); }
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  display: flex;
+  gap: 6px;
+  animation: slideIn 0.3s ease;
+}
+
+.message.user { justify-content: flex-end; }
+.message.ai { justify-content: flex-start; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message-bubble {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.message.user .message-bubble {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.message.ai .message-bubble {
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+
+.ai-input {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border2);
+  display: flex;
+  gap: 6px;
+}
+
+.ai-input input {
+  flex: 1;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: var(--sans);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.ai-input input:focus {
+  border-color: var(--accent);
+  background: rgba(0,200,224,0.05);
+}
+
+.ai-input button {
+  padding: 8px 10px;
+  background: var(--accent);
+  border: none;
+  color: var(--bg);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.ai-input button:hover { background: var(--accent2); }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ─── MODAL ─── */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.active { display: flex; }
+
+.modal-content {
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
 }
-.network-map canvas { width: 100%; height: 220px; }
 
-/* ── SCROLLBAR ── */
-.content::-webkit-scrollbar { width: 4px; }
-.content::-webkit-scrollbar-track { background: transparent; }
-.content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
 
-/* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .sensors-grid { grid-template-columns: repeat(2, 1fr); }
-  .charts-row { grid-template-columns: 1fr; }
+.modal-text {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.modal-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--mono);
+  margin-bottom: 16px;
+  outline: none;
+}
+
+.modal-input:focus { border-color: var(--accent); }
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--sans);
+  transition: all 0.2s;
+}
+
+.modal-btn.primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.modal-btn.primary:hover { background: var(--accent2); }
+
+.modal-btn.secondary {
+  background: var(--bg3);
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+
+.modal-btn.secondary:hover { border-color: var(--accent); }
+
+@media (max-width: 768px) {
+  .sidebar { width: 100%; }
+  .container { flex-direction: column; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .ai-panel { width: 100%; max-width: none; bottom: 80px; right: 0; left: 0; border-radius: 12px 12px 0 0; }
 }
 </style>
 </head>
 <body>
-<div class="app">
 
 <!-- HEADER -->
 <header>
   <div class="logo">
-    <div class="logo-icon"></div>
-    <h1>IoT<span>VPN</span>SHIELD</h1>
+    <div class="logo-icon">🛡</div>
+    <h1>IoT<span>VPN</span></h1>
   </div>
-  <div class="header-status">
-    <div class="conn-badge">
-      <div class="conn-dot live" id="ws-dot"></div>
-      <span id="ws-label">SIMULÉ</span>
+  <div class="header-right">
+    <div class="vpn-status">
+      <div class="status-dot active" id="global-vpn-dot"></div>
+      <span id="global-vpn-status">N capteurs protégés</span>
     </div>
-    <div class="time-display" id="clock">--:--:--</div>
   </div>
 </header>
 
-<div class="main">
-
-<!-- SIDEBAR -->
-<nav class="sidebar">
-  <div class="nav-section">Navigation</div>
-  <div class="nav-item active" onclick="showPage('dashboard', this)">
-    <span class="nav-icon">◈</span> Dashboard
-  </div>
-  <div class="nav-item" onclick="showPage('sensors', this)">
-    <span class="nav-icon">◉</span> Capteurs IoT
-  </div>
-  <div class="nav-item" onclick="showPage('vpn', this)">
-    <span class="nav-icon">⬡</span> Contrôle VPN
-  </div>
-  <div class="nav-item" onclick="showPage('attacks', this)">
-    <span class="nav-icon">⚡</span> Attaques Kali
-  </div>
-  <div class="nav-item" onclick="showPage('monitoring', this)">
-    <span class="nav-icon">▦</span> Monitoring
-  </div>
-</nav>
-
-<!-- CONTENT -->
-<div class="content">
-
-  <!-- ═══ PAGE : DASHBOARD ═══ -->
-  <div class="page active" id="page-dashboard">
-
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">CAPTEURS ACTIFS</div>
-        <div class="stat-value green" id="stat-online">6</div>
-        <div class="stat-sub">sur 6 total</div>
+<div class="container">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <!-- Navigation -->
+    <div class="nav-section">
+      <div class="nav-section-title">Navigation</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="nav-icon">📊</span> Dashboard
       </div>
-      <div class="stat-card">
-        <div class="stat-label">VPN ACTIF</div>
-        <div class="stat-value cyan" id="stat-vpn">WG</div>
-        <div class="stat-sub" id="stat-vpn-sub">WireGuard — en ligne</div>
+      <div class="nav-item" onclick="showPage('sensors', this)">
+        <span class="nav-icon">🌡</span> Capteurs
       </div>
-      <div class="stat-card">
-        <div class="stat-label">ATTAQUES DÉTECTÉES</div>
-        <div class="stat-value red" id="stat-attacks">0</div>
-        <div class="stat-sub">dernière 1h</div>
+      <div class="nav-item" onclick="showPage('vpn-stats', this)">
+        <span class="nav-icon">🔒</span> VPN Stats
       </div>
-      <div class="stat-card">
-        <div class="stat-label">ATTAQUES BLOQUÉES</div>
-        <div class="stat-value warn" id="stat-blocked">0</div>
-        <div class="stat-sub">par le VPN</div>
+      <div class="nav-item" onclick="showPage('attacks', this)">
+        <span class="nav-icon">⚡</span> Sécurité
       </div>
     </div>
 
-    <!-- VPN QUICK CONTROL -->
-    <div>
-      <div class="section-header" style="margin-bottom:14px">
-        <span class="section-title">Contrôle VPN</span>
+    <!-- Stats Section (Grafana style) -->
+    <div class="stats-section">
+      <div class="stats-section-title">Métriques clés</div>
+      <div class="stat-item">
+        <span class="stat-label">En ligne</span>
+        <span class="stat-value green" id="stat-online">0</span>
       </div>
-      <div class="vpn-panel">
-        <div class="vpn-protocol" id="vpn-openvpn">
-          <div class="vpn-header">
-            <span class="vpn-name">OpenVPN</span>
-            <span class="vpn-badge off" id="badge-openvpn">INACTIF</span>
-          </div>
-          <div class="vpn-metrics">
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">Latence</span>
-              <span class="vpn-metric-val" id="ovpn-latency">— ms</span>
-            </div>
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">Débit</span>
-              <span class="vpn-metric-val" id="ovpn-speed">— MB/s</span>
-            </div>
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">CPU</span>
-              <span class="vpn-metric-val" id="ovpn-cpu">— %</span>
-            </div>
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">Protocole</span>
-              <span class="vpn-metric-val">SSL/TLS</span>
-            </div>
-          </div>
-          <button class="vpn-btn start" id="btn-openvpn" onclick="toggleVPN('openvpn')">▶ ACTIVER</button>
-        </div>
-
-        <div class="vpn-divider"></div>
-
-        <div class="vpn-protocol active-vpn" id="vpn-wireguard">
-          <div class="vpn-header">
-            <span class="vpn-name">WireGuard</span>
-            <span class="vpn-badge on" id="badge-wireguard">ACTIF</span>
-          </div>
-          <div class="vpn-metrics">
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">Latence</span>
-              <span class="vpn-metric-val" id="wg-latency">12 ms</span>
-            </div>
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">Débit</span>
-              <span class="vpn-metric-val" id="wg-speed">94 MB/s</span>
-            </div>
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">CPU</span>
-              <span class="vpn-metric-val" id="wg-cpu">3 %</span>
-            </div>
-            <div class="vpn-metric-row">
-              <span class="vpn-metric-label">Protocole</span>
-              <span class="vpn-metric-val">ChaCha20</span>
-            </div>
-          </div>
-          <button class="vpn-btn stop" id="btn-wireguard" onclick="toggleVPN('wireguard')">■ DÉSACTIVER</button>
-        </div>
+      <div class="stat-item">
+        <span class="stat-label">Hors ligne</span>
+        <span class="stat-value danger" id="stat-offline">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Sécurisés</span>
+        <span class="stat-value" id="stat-secured">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total</span>
+        <span class="stat-value warn" id="stat-total">0</span>
       </div>
     </div>
 
-    <!-- SENSORS OVERVIEW -->
-    <div>
-      <div class="section-header" style="margin-bottom:14px">
-        <span class="section-title">Aperçu capteurs</span>
+    <!-- VPN Stats Section -->
+    <div class="stats-section">
+      <div class="stats-section-title">VPN Stats</div>
+      
+      <div class="stat-item">
+        <span class="stat-label">Status</span>
+        <span class="stat-value green" id="vpn-status">ACTIF</span>
       </div>
-      <div class="sensors-grid" id="sensors-grid"></div>
+
+      <div class="stat-item">
+        <span class="stat-label">Protocol</span>
+        <span class="stat-value" id="vpn-protocol" style="font-size: 13px;">WireGuard</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">Latence</span>
+        <span class="stat-value" id="vpn-latency" style="font-size: 14px;">12 ms</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">Débit</span>
+        <span class="stat-value" id="vpn-bandwidth" style="font-size: 14px;">94 MB/s</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">CPU</span>
+        <span class="stat-value" id="vpn-cpu" style="font-size: 14px;">3%</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">Tunnels</span>
+        <span class="stat-value" id="vpn-tunnels" style="font-size: 14px;">0</span>
+      </div>
+
+      <div class="stat-item">
+        <span class="stat-label">Uptime</span>
+        <span class="stat-value" id="vpn-uptime" style="font-size: 13px;">2d 15h</span>
+      </div>
+
+      <!-- Mini VPN Chart -->
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border2);">
+        <div style="font-size: 10px; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">Latence 24h</div>
+        <canvas id="vpn-chart-latency" width="200" height="40" style="width: 100%; height: 40px; background: rgba(0,200,224,0.05); border-radius: 3px; padding: 2px;"></canvas>
+      </div>
+
+      <div style="margin-top: 8px;">
+        <div style="font-size: 10px; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">Débit 24h</div>
+        <canvas id="vpn-chart-bandwidth" width="200" height="40" style="width: 100%; height: 40px; background: rgba(0,200,224,0.05); border-radius: 3px; padding: 2px;"></canvas>
+      </div>
+
+      <div style="margin-top: 8px;">
+        <div style="font-size: 10px; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">CPU 24h</div>
+        <canvas id="vpn-chart-cpu" width="200" height="40" style="width: 100%; height: 40px; background: rgba(0,200,224,0.05); border-radius: 3px; padding: 2px;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <!-- PAGE: DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Vue d'ensemble de vos capteurs IoT</div>
+        </div>
+      </div>
+      <div class="page-content">
+        <div class="dashboard-grid" id="dashboard-grid"></div>
+      </div>
     </div>
 
-    <!-- ATTACKS RECENT -->
-    <div>
-      <div class="section-header" style="margin-bottom:14px">
-        <span class="section-title">Dernières attaques</span>
+    <!-- PAGE: SENSORS -->
+    <div class="page" id="page-sensors">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Gestion des capteurs</div>
+          <div class="page-subtitle">Ajouter et gérer vos capteurs IoT</div>
+        </div>
       </div>
-      <div class="attacks-panel">
-        <div class="attacks-header">
-          <div class="attacks-title">
-            Journal Kali Linux
-            <span class="live-badge">LIVE</span>
+      <div class="page-content">
+        <div class="form-card">
+          <div class="form-card-title">Ajouter un capteur</div>
+          <div class="form-group">
+            <label class="form-label">Nom</label>
+            <input type="text" class="form-input" id="sensor-name" placeholder="Température Bureau" />
           </div>
-          <button onclick="clearAttacks()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--mono)">EFFACER</button>
-        </div>
-        <div class="attacks-cols">
-          <span>Heure</span><span>Type</span><span>Description</span><span>Cible</span><span>Résultat</span>
-        </div>
-        <div class="attacks-list" id="attacks-list">
-          <div style="padding:24px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;">
-            En attente d'événements...
+          <div class="form-group">
+            <label class="form-label">Adresse IP</label>
+            <input type="text" class="form-input" id="sensor-ip" placeholder="192.168.1.50" />
+          </div>
+          <div class="form-buttons">
+            <button class="btn btn-primary" onclick="manualAddSensor()">Ajouter</button>
+            <button class="btn btn-secondary" onclick="clearSensorForm()">Annuler</button>
           </div>
         </div>
+
+        <div style="margin-top: 24px; margin-bottom: 16px;">
+          <div class="page-title" style="font-size: 14px;">Tous les capteurs</div>
+        </div>
+        <div class="dashboard-grid" id="sensors-grid"></div>
+      </div>
+    </div>
+
+    <!-- PAGE: VPN STATS -->
+    <div class="page" id="page-vpn-stats">
+      <div class="page-header">
+        <div>
+          <div class="page-title">VPN Statistics</div>
+          <div class="page-subtitle">Détails complets et performance du VPN</div>
+        </div>
+      </div>
+      <div class="page-content">
+        <!-- VPN Status Cards -->
+        <div class="dashboard-grid" style="grid-template-columns: repeat(4, 1fr); gap: 16px;">
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Status</div>
+              <div class="widget-icon">🔒</div>
+            </div>
+            <div class="widget-value green" id="vpn-status-card">ACTIF</div>
+            <div class="widget-unit">Connexion VPN</div>
+          </div>
+
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Protocole</div>
+              <div class="widget-icon">⚙</div>
+            </div>
+            <div class="widget-value" id="vpn-protocol-card" style="font-size: 24px;">WireGuard</div>
+            <div class="widget-unit">Actuel</div>
+          </div>
+
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Tunnels Actifs</div>
+              <div class="widget-icon">🌐</div>
+            </div>
+            <div class="widget-value" id="vpn-tunnels-card">0</div>
+            <div class="widget-unit">Connexions sécurisées</div>
+          </div>
+
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Uptime</div>
+              <div class="widget-icon">⏱</div>
+            </div>
+            <div class="widget-value" id="vpn-uptime-card" style="font-size: 20px;">2d 15h</div>
+            <div class="widget-unit">Temps de fonctionnement</div>
+          </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div style="margin-top: 24px; margin-bottom: 16px;">
+          <div class="page-title" style="font-size: 14px;">Métriques de Performance</div>
+        </div>
+        <div class="dashboard-grid" style="grid-template-columns: repeat(3, 1fr); gap: 16px;">
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Latence</div>
+              <div class="widget-icon">📡</div>
+            </div>
+            <div class="widget-value" id="vpn-latency-card">12 ms</div>
+            <div class="widget-unit">Temps de réponse</div>
+            <canvas id="vpn-chart-latency-full" width="200" height="60" style="width: 100%; margin-top: 12px; background: rgba(0,200,224,0.05); border-radius: 4px;"></canvas>
+          </div>
+
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Débit</div>
+              <div class="widget-icon">📊</div>
+            </div>
+            <div class="widget-value" id="vpn-bandwidth-card">94 MB/s</div>
+            <div class="widget-unit">Vitesse de transfert</div>
+            <canvas id="vpn-chart-bandwidth-full" width="200" height="60" style="width: 100%; margin-top: 12px; background: rgba(0,200,224,0.05); border-radius: 4px;"></canvas>
+          </div>
+
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">CPU Usage</div>
+              <div class="widget-icon">⚡</div>
+            </div>
+            <div class="widget-value" id="vpn-cpu-card">3%</div>
+            <div class="widget-unit">Consommation processeur</div>
+            <canvas id="vpn-chart-cpu-full" width="200" height="60" style="width: 100%; margin-top: 12px; background: rgba(0,200,224,0.05); border-radius: 4px;"></canvas>
+          </div>
+        </div>
+
+        <!-- VPN Configuration -->
+        <div style="margin-top: 24px; margin-bottom: 16px;">
+          <div class="page-title" style="font-size: 14px;">Configuration VPN</div>
+        </div>
+        <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr); gap: 16px;">
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Chiffrement</div>
+            </div>
+            <div style="padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 6px; background: rgba(0,200,224,0.05); border-radius: 4px;">
+                <span style="color: var(--text-sub);">Algorithme</span>
+                <span style="color: var(--accent);">ChaCha20-Poly1305</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 6px; background: rgba(0,200,224,0.05); border-radius: 4px;">
+                <span style="color: var(--text-sub);">Clé</span>
+                <span style="color: var(--accent);">256-bit</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 6px; background: rgba(0,200,224,0.05); border-radius: 4px;">
+                <span style="color: var(--text-sub);">Authentification</span>
+                <span style="color: var(--accent);">Poly1305</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="widget">
+            <div class="widget-header">
+              <div class="widget-title">Connectivité</div>
+            </div>
+            <div style="padding-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 6px; background: rgba(0,200,224,0.05); border-radius: 4px;">
+                <span style="color: var(--text-sub);">Port</span>
+                <span style="color: var(--accent);">51820 (UDP)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 6px; background: rgba(0,200,224,0.05); border-radius: 4px;">
+                <span style="color: var(--text-sub);">Adresse IP</span>
+                <span style="color: var(--accent);">10.0.0.1</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 6px; background: rgba(0,200,224,0.05); border-radius: 4px;">
+                <span style="color: var(--text-sub);">Gateway</span>
+                <span style="color: var(--accent);">10.0.0.1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Connection Log -->
+        <div style="margin-top: 24px; margin-bottom: 16px;">
+          <div class="page-title" style="font-size: 14px;">Journal des Connexions</div>
+        </div>
+        <div class="widget">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(0,224,150,0.1); border-radius: 4px; border-left: 3px solid var(--accent2);">
+              <span style="font-size: 12px; color: var(--accent2);">✓ WireGuard connecté</span>
+              <span style="font-size: 11px; color: var(--text-sub);">14:32:15</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(0,200,224,0.1); border-radius: 4px; border-left: 3px solid var(--accent);">
+              <span style="font-size: 12px; color: var(--accent);">➜ Tunnel établi vers serveur VPN</span>
+              <span style="font-size: 11px; color: var(--text-sub);">14:32:16</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(0,200,224,0.1); border-radius: 4px; border-left: 3px solid var(--accent);">
+              <span style="font-size: 12px; color: var(--accent);">➜ 2 capteurs sécurisés</span>
+              <span style="font-size: 11px; color: var(--text-sub);">14:32:17</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE: ATTACKS -->
+    <div class="page" id="page-attacks">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Sécurité</div>
+          <div class="page-subtitle">Tests d'attaques Kali Linux</div>
+        </div>
+      </div>
+      <div class="page-content">
+        <button class="btn btn-primary" onclick="simulateAttack()" style="margin-bottom: 16px; max-width: 200px;">⚡ Simuler une attaque</button>
+
+        <div class="attack-log">
+          <div class="log-header">
+            <div class="log-title">
+              Journal des attaques
+              <span class="log-badge">LIVE</span>
+            </div>
+            <button onclick="clearAttacks()" style="background: none; border: none; color: var(--text-sub); cursor: pointer; font-family: var(--mono); font-size: 12px; transition: color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-sub)'">EFFACER</button>
+          </div>
+          <div class="log-columns">
+            <span>Heure</span><span>Type</span><span>Description</span><span>Cible</span><span>Résultat</span>
+          </div>
+          <div class="log-list" id="attack-log">
+            <div class="empty-state">
+              <div class="empty-icon">⌚</div>
+              <div>En attente d'attaques...</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ═══ PAGE : CAPTEURS ═══ -->
-  <div class="page" id="page-sensors">
-    <div class="section-header">
-      <span class="section-title">Tous les capteurs IoT</span>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="sensors-count">6 / 6 en ligne</span>
+<!-- FLOATING AI BUTTON -->
+<button class="ai-fab" onclick="toggleAIPanel()">🤖</button>
+
+<!-- AI CHAT PANEL -->
+<div class="ai-panel" id="ai-panel">
+  <div class="ai-header">
+    <div class="ai-title">
+      <span class="ai-icon">🤖</span>
+      <span class="ai-label">Assistant IoT</span>
     </div>
-    <div class="sensors-grid" id="sensors-grid-full" style="grid-template-columns: repeat(3,1fr)"></div>
+    <button class="ai-close" onclick="toggleAIPanel()">✕</button>
   </div>
+  <div class="messages" id="messages"></div>
+  <div class="ai-input">
+    <input type="text" id="chat-input" placeholder="Posez une question..." />
+    <button onclick="sendMessage()">→</button>
+  </div>
+</div>
 
-  <!-- ═══ PAGE : VPN ═══ -->
-  <div class="page" id="page-vpn">
-    <div class="section-header">
-      <span class="section-title">Contrôle VPN</span>
+<!-- API KEY MODAL -->
+<div class="modal" id="api-modal">
+  <div class="modal-content">
+    <div class="modal-title">Clé API Anthropic</div>
+    <div class="modal-text">
+      Entrez votre clé API pour utiliser l'assistant. Obtenez-la sur <a href="https://console.anthropic.com" target="_blank" style="color: var(--accent);">console.anthropic.com</a>
     </div>
-    <div class="vpn-panel">
-      <div class="vpn-protocol" id="vpn-openvpn2">
-        <div class="vpn-header">
-          <span class="vpn-name">OpenVPN</span>
-          <span class="vpn-badge off" id="badge-openvpn2">INACTIF</span>
-        </div>
-        <div class="vpn-metrics">
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Latence</span><span class="vpn-metric-val" id="ovpn-latency2">— ms</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Débit</span><span class="vpn-metric-val" id="ovpn-speed2">— MB/s</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">CPU</span><span class="vpn-metric-val" id="ovpn-cpu2">— %</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Chiffrement</span><span class="vpn-metric-val">AES-256-GCM</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Port</span><span class="vpn-metric-val">1194 UDP</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Auth</span><span class="vpn-metric-val">PKI / Certificats</span></div>
-        </div>
-        <button class="vpn-btn start" id="btn-openvpn2" onclick="toggleVPN('openvpn')">▶ ACTIVER OPENVPN</button>
-      </div>
-      <div class="vpn-divider"></div>
-      <div class="vpn-protocol active-vpn" id="vpn-wireguard2">
-        <div class="vpn-header">
-          <span class="vpn-name">WireGuard</span>
-          <span class="vpn-badge on" id="badge-wireguard2">ACTIF</span>
-        </div>
-        <div class="vpn-metrics">
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Latence</span><span class="vpn-metric-val" id="wg-latency2">12 ms</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Débit</span><span class="vpn-metric-val" id="wg-speed2">94 MB/s</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">CPU</span><span class="vpn-metric-val" id="wg-cpu2">3 %</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Chiffrement</span><span class="vpn-metric-val">ChaCha20-Poly1305</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Port</span><span class="vpn-metric-val">51820 UDP</span></div>
-          <div class="vpn-metric-row"><span class="vpn-metric-label">Auth</span><span class="vpn-metric-val">Clés publiques</span></div>
-        </div>
-        <button class="vpn-btn stop" id="btn-wireguard2" onclick="toggleVPN('wireguard')">■ DÉSACTIVER WIREGUARD</button>
-      </div>
-    </div>
-
-    <!-- Comparison table -->
-    <div class="attacks-panel">
-      <div class="attacks-header">
-        <div class="attacks-title">Comparaison en temps réel</div>
-      </div>
-      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0">
-        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border)">MÉTRIQUE</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border);text-align:center">OpenVPN</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--accent);padding:8px 0;border-bottom:1px solid var(--border);text-align:center">WireGuard</div>
-        <div style="font-size:12px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--border)">Latence moy.</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--warn);padding:10px 0;border-bottom:1px solid var(--border);text-align:center" id="cmp-ovpn-lat">38 ms</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent2);padding:10px 0;border-bottom:1px solid var(--border);text-align:center" id="cmp-wg-lat">12 ms</div>
-        <div style="font-size:12px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--border)">Débit max</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--warn);padding:10px 0;border-bottom:1px solid var(--border);text-align:center">42 MB/s</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent2);padding:10px 0;border-bottom:1px solid var(--border);text-align:center">94 MB/s</div>
-        <div style="font-size:12px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--border)">CPU moyen</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--warn);padding:10px 0;border-bottom:1px solid var(--border);text-align:center">18 %</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent2);padding:10px 0;border-bottom:1px solid var(--border);text-align:center">3 %</div>
-        <div style="font-size:12px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--border)">Lignes de code</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--warn);padding:10px 0;border-bottom:1px solid var(--border);text-align:center">~70 000</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent2);padding:10px 0;border-bottom:1px solid var(--border);text-align:center">~4 000</div>
-        <div style="font-size:12px;color:var(--muted);padding:10px 0">Chiffrement</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--text);padding:10px 0;text-align:center">AES-256</div>
-        <div style="font-family:var(--mono);font-size:12px;color:var(--accent);padding:10px 0;text-align:center">ChaCha20</div>
-      </div>
+    <input type="password" class="modal-input" id="api-key-input" placeholder="sk-ant-..." />
+    <div class="modal-buttons">
+      <button class="modal-btn primary" onclick="saveAPIKey()">Continuer</button>
+      <button class="modal-btn secondary" onclick="skipAPIKey()">Plus tard</button>
     </div>
   </div>
-
-  <!-- ═══ PAGE : ATTAQUES ═══ -->
-  <div class="page" id="page-attacks">
-    <div class="section-header">
-      <span class="section-title">Journal des attaques Kali Linux</span>
-      <button onclick="simulateAttack()" style="background:rgba(255,68,85,0.1);border:1px solid rgba(255,68,85,0.25);color:var(--danger);padding:6px 14px;border-radius:6px;font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:0.05em">⚡ SIMULER ATTAQUE</button>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">TOTAL ATTAQUES</div>
-        <div class="stat-value red" id="stat-atk-total">0</div>
-        <div class="stat-sub">cette session</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">BLOQUÉES</div>
-        <div class="stat-value green" id="stat-atk-blocked">0</div>
-        <div class="stat-sub">par le VPN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">RÉUSSIES</div>
-        <div class="stat-value red" id="stat-atk-success">0</div>
-        <div class="stat-sub">sans VPN</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">TYPES DÉTECTÉS</div>
-        <div class="stat-value warn" id="stat-atk-types">0</div>
-        <div class="stat-sub">ARP / DoS / Nmap</div>
-      </div>
-    </div>
-    <div class="attacks-panel">
-      <div class="attacks-header">
-        <div class="attacks-title">
-          Événements en temps réel
-          <span class="live-badge">LIVE</span>
-        </div>
-        <button onclick="clearAttacks()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--mono)">EFFACER</button>
-      </div>
-      <div class="attacks-cols">
-        <span>Heure</span><span>Type</span><span>Description</span><span>Cible</span><span>Résultat</span>
-      </div>
-      <div class="attacks-list" id="attacks-list2">
-        <div style="padding:24px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;">
-          En attente d'événements...
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══ PAGE : MONITORING ═══ -->
-  <div class="page" id="page-monitoring">
-    <div class="section-header">
-      <span class="section-title">Monitoring réseau</span>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-label">CPU SERVEUR VPN</div>
-        <div class="stat-value cyan" id="mon-cpu">3%</div>
-        <div class="stat-sub">WireGuard actif</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">LATENCE RÉSEAU</div>
-        <div class="stat-value green" id="mon-lat">12ms</div>
-        <div class="stat-sub">dernière mesure</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">DÉBIT TUNNEL</div>
-        <div class="stat-value cyan" id="mon-bw">94 MB/s</div>
-        <div class="stat-sub">chiffré</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">PAQUETS / SEC</div>
-        <div class="stat-value warn" id="mon-pps">1240</div>
-        <div class="stat-sub">total réseau</div>
-      </div>
-    </div>
-    <div class="charts-row">
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-title">LATENCE (ms)</span>
-          <span class="chart-val cyan" id="chart-lat-val">12 ms</span>
-        </div>
-        <div class="chart-area"><canvas id="chart-latency"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-title">CPU (%)</span>
-          <span class="chart-val green" id="chart-cpu-val">3 %</span>
-        </div>
-        <div class="chart-area"><canvas id="chart-cpu"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-title">DÉBIT MB/s</span>
-          <span class="chart-val cyan" id="chart-bw-val">94 MB/s</span>
-        </div>
-        <div class="chart-area"><canvas id="chart-bw"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card-header">
-          <span class="chart-title">PAQUETS / SEC</span>
-          <span class="chart-val green" id="chart-pps-val">1240</span>
-        </div>
-        <div class="chart-area"><canvas id="chart-pps"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- end content -->
-</div><!-- end main -->
-</div><!-- end app -->
+</div>
 
 <script>
-// ─── STATE ───
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+
 const state = {
-  vpn: { openvpn: false, wireguard: true },
-  attacks: [],
   sensors: [
-    { id: 'IOT-01', name: 'Température Bureau', val: 23.4, unit: '°C', status: 'online', hist: [] },
-    { id: 'IOT-02', name: 'Humidité Salle Srv', val: 58.2, unit: '%', status: 'online', hist: [] },
-    { id: 'IOT-03', name: 'Pression Atm.', val: 1013, unit: 'hPa', status: 'online', hist: [] },
-    { id: 'IOT-04', name: 'CO₂ Laboratoire', val: 412, unit: 'ppm', status: 'warning', hist: [] },
-    { id: 'IOT-05', name: 'Luminosité Extérieure', val: 8340, unit: 'lux', status: 'online', hist: [] },
-    { id: 'IOT-06', name: 'Vibration Machine', val: 0.02, unit: 'g', status: 'online', hist: [] },
+    { id: 'IOT-01', name: 'Température Bureau', ip: '192.168.1.10', vpnActive: true, status: 'online', value: 23.4, unit: '°C', history: [22.1, 22.5, 22.8, 23.1, 23.0, 23.2, 23.4] },
+    { id: 'IOT-02', name: 'Humidité Salle Serveur', ip: '192.168.1.11', vpnActive: true, status: 'online', value: 58.2, unit: '%', history: [55.2, 56.1, 56.8, 57.2, 57.8, 58.0, 58.2] },
+    { id: 'IOT-03', name: 'CO₂ Laboratoire', ip: '192.168.1.12', vpnActive: false, status: 'offline', value: 412, unit: 'ppm', history: [410, 410, 411, 411, 411, 412, 412] },
   ],
-  charts: { latency: [], cpu: [], bw: [], pps: [] },
-  attackTypes: new Set(),
+  attacks: [],
+  apiKey: localStorage.getItem('anthropic-api-key') || null,
+  aiPanelOpen: false,
+  vpn: {
+    active: true,
+    protocol: 'WireGuard',
+    latency: 12,
+    bandwidth: 94,
+    cpu: 3,
+    tunnels: 2,
+    uptime: '2d 15h',
+    latencyHistory: [18, 16, 14, 12, 11, 12, 13, 12, 11, 12, 13, 12, 12, 11, 12, 13, 14, 13, 12, 12],
+    bandwidthHistory: [85, 88, 90, 92, 94, 93, 92, 94, 95, 94, 93, 92, 91, 90, 88, 86, 84, 85, 87, 89],
+    cpuHistory: [5, 4, 4, 3, 3, 2, 3, 3, 4, 3, 3, 2, 2, 2, 3, 3, 4, 3, 3, 3],
+  },
 };
 
-// ─── NAVIGATION ───
-function showPage(id, el) {
+// ═══════════════════════════════════════════════════════════════
+//  UI NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+
+function showPage(pageName, navEl) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${pageName}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  el.classList.add('active');
-  if (id === 'monitoring') drawAllCharts();
+  navEl.classList.add('active');
+  updateUI();
 }
 
-// ─── CLOCK ───
-function updateClock() {
-  const now = new Date();
-  document.getElementById('clock').textContent =
-    now.toLocaleTimeString('fr-FR', { hour12: false });
+function toggleAIPanel() {
+  const panel = document.getElementById('ai-panel');
+  state.aiPanelOpen = !state.aiPanelOpen;
+  if (state.aiPanelOpen) {
+    panel.classList.add('active');
+    document.getElementById('chat-input').focus();
+  } else {
+    panel.classList.remove('active');
+  }
 }
-setInterval(updateClock, 1000);
-updateClock();
 
-// ─── SENSORS ───
-function renderSensors() {
-  ['sensors-grid', 'sensors-grid-full'].forEach(gid => {
-    const grid = document.getElementById(gid);
-    if (!grid) return;
-    grid.innerHTML = state.sensors.map(s => `
-      <div class="sensor-card ${s.status}">
-        <div class="sensor-top">
-          <span class="sensor-id">${s.id}</span>
-          <div class="sensor-status-dot"></div>
-        </div>
-        <div class="sensor-name">${s.name}</div>
-        <div class="sensor-val">${s.val} <span>${s.unit}</span></div>
-        <div class="sensor-meta">
-          <span class="sensor-meta-item">VPN: ${state.vpn.wireguard ? 'WG ✓' : state.vpn.openvpn ? 'OVPN ✓' : '✗ OFF'}</span>
-          <span class="sensor-meta-item">${s.status === 'online' ? '● EN LIGNE' : s.status === 'warning' ? '⚠ ALERTE' : '✗ HORS LIGNE'}</span>
-        </div>
-      </div>
-    `).join('');
+// ═══════════════════════════════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════════════════════════════
+
+function updateVPNStats() {
+  // Update VPN metrics display
+  document.getElementById('vpn-status').textContent = state.vpn.active ? 'ACTIF' : 'INACTIF';
+  document.getElementById('vpn-status').style.color = state.vpn.active ? 'var(--accent2)' : 'var(--danger)';
+  document.getElementById('vpn-protocol').textContent = state.vpn.protocol;
+  document.getElementById('vpn-latency').textContent = `${state.vpn.latency} ms`;
+  document.getElementById('vpn-bandwidth').textContent = `${state.vpn.bandwidth} MB/s`;
+  document.getElementById('vpn-cpu').textContent = `${state.vpn.cpu}%`;
+  document.getElementById('vpn-tunnels').textContent = state.vpn.tunnels;
+  document.getElementById('vpn-uptime').textContent = state.vpn.uptime;
+
+  // Update number of tunnels based on VPN active sensors
+  state.vpn.tunnels = state.sensors.filter(s => s.vpnActive).length;
+  document.getElementById('vpn-tunnels').textContent = state.vpn.tunnels;
+
+  // Update full page cards if they exist
+  if (document.getElementById('vpn-status-card')) {
+    document.getElementById('vpn-status-card').textContent = state.vpn.active ? 'ACTIF' : 'INACTIF';
+    document.getElementById('vpn-status-card').style.color = state.vpn.active ? 'var(--accent2)' : 'var(--danger)';
+  }
+  if (document.getElementById('vpn-protocol-card')) {
+    document.getElementById('vpn-protocol-card').textContent = state.vpn.protocol;
+  }
+  if (document.getElementById('vpn-tunnels-card')) {
+    document.getElementById('vpn-tunnels-card').textContent = state.vpn.tunnels;
+  }
+  if (document.getElementById('vpn-uptime-card')) {
+    document.getElementById('vpn-uptime-card').textContent = state.vpn.uptime;
+  }
+  if (document.getElementById('vpn-latency-card')) {
+    document.getElementById('vpn-latency-card').textContent = `${state.vpn.latency} ms`;
+  }
+  if (document.getElementById('vpn-bandwidth-card')) {
+    document.getElementById('vpn-bandwidth-card').textContent = `${state.vpn.bandwidth} MB/s`;
+  }
+  if (document.getElementById('vpn-cpu-card')) {
+    document.getElementById('vpn-cpu-card').textContent = `${state.vpn.cpu}%`;
+  }
+
+  // Draw VPN charts
+  drawVPNChart('vpn-chart-latency', state.vpn.latencyHistory, 0, 30);
+  drawVPNChart('vpn-chart-bandwidth', state.vpn.bandwidthHistory, 0, 100);
+  drawVPNChart('vpn-chart-cpu', state.vpn.cpuHistory, 0, 10);
+  
+  // Draw full-size charts
+  drawVPNChartFull('vpn-chart-latency-full', state.vpn.latencyHistory, 0, 30);
+  drawVPNChartFull('vpn-chart-bandwidth-full', state.vpn.bandwidthHistory, 0, 100);
+  drawVPNChartFull('vpn-chart-cpu-full', state.vpn.cpuHistory, 0, 10);
+}
+
+function drawVPNChart(canvasId, data, minVal, maxVal) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (data.length < 2) return;
+
+  const range = maxVal - minVal || 1;
+  const points = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * w,
+    y: h - 2 - ((v - minVal) / range) * (h - 4),
+  }));
+
+  // Draw gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, 'rgba(0,200,224,0.4)');
+  gradient.addColorStop(1, 'rgba(0,200,224,0.05)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Draw line
+  ctx.beginPath();
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = 'rgba(0,200,224,0.9)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawVPNChartFull(canvasId, data, minVal, maxVal) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (data.length < 2) return;
+
+  const range = maxVal - minVal || 1;
+  const points = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * w,
+    y: h - 8 - ((v - minVal) / range) * (h - 16),
+  }));
+
+  // Draw gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, 'rgba(0,200,224,0.5)');
+  gradient.addColorStop(1, 'rgba(0,200,224,0.08)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Draw line
+  ctx.beginPath();
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = 'rgba(0,200,224,1)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw points
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,200,224,1)';
+    ctx.fill();
   });
-  const online = state.sensors.filter(s => s.status === 'online').length;
-  const c = document.getElementById('sensors-count');
-  if (c) c.textContent = `${online} / ${state.sensors.length} en ligne`;
-  document.getElementById('stat-online').textContent = online;
 }
 
-// ─── VPN TOGGLE ───
-function toggleVPN(which) {
-  const other = which === 'openvpn' ? 'wireguard' : 'openvpn';
-  state.vpn[which] = !state.vpn[which];
-  if (state.vpn[which]) state.vpn[other] = false;
-  updateVPNUI();
+function updateVPNData() {
+  // Simulate VPN data changes
+  state.vpn.latency = Math.round((Math.random() * 20) + 8);
+  state.vpn.bandwidth = Math.round((Math.random() * 20) + 80);
+  state.vpn.cpu = Math.round(Math.random() * 8) + 1;
+
+  // Shift history and add new values
+  state.vpn.latencyHistory.push(state.vpn.latency);
+  state.vpn.bandwidthHistory.push(state.vpn.bandwidth);
+  state.vpn.cpuHistory.push(state.vpn.cpu);
+
+  if (state.vpn.latencyHistory.length > 20) state.vpn.latencyHistory.shift();
+  if (state.vpn.bandwidthHistory.length > 20) state.vpn.bandwidthHistory.shift();
+  if (state.vpn.cpuHistory.length > 20) state.vpn.cpuHistory.shift();
+
+  updateVPNStats();
+}
+
+function updateUI() {
+  renderDashboard();
   renderSensors();
+  updateStats();
+  updateVPNStats();
 }
 
-function updateVPNUI() {
-  const wgOn = state.vpn.wireguard;
-  const ovOn = state.vpn.openvpn;
+function renderDashboard() {
+  const grid = document.getElementById('dashboard-grid');
+  grid.innerHTML = state.sensors.map((s, idx) => `
+    <div class="widget">
+      <div class="widget-header">
+        <div class="widget-title">${s.name}</div>
+        <div class="widget-icon">🌡</div>
+      </div>
+      <div class="widget-value" style="color: ${s.status === 'online' ? 'var(--accent)' : 'var(--danger)'};">${s.value}</div>
+      <div class="widget-unit">${s.unit} • IP: ${s.ip}</div>
+      <canvas id="sparkline-${idx}" class="sparkline-chart" data-values='${JSON.stringify(s.history)}'></canvas>
+      <div class="widget-status">
+        <div class="widget-status-dot ${s.status}"></div>
+        <span>${s.status === 'online' ? '● En ligne' : '✕ Hors ligne'} • ${s.vpnActive ? '🔒 VPN' : '🔓 Sans VPN'}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${s.vpnActive ? '100%' : '0%'}"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top: 8px; padding: 6px;" onclick="toggleVPN('${s.id}')">
+        ${s.vpnActive ? '✓ VPN ON' : 'VPN OFF'}
+      </button>
+      <button class="btn btn-secondary" style="margin-top: 4px; padding: 6px;" onclick="removeSensor('${s.id}')">Supprimer</button>
+    </div>
+  `).join('');
 
-  ['', '2'].forEach(sfx => {
-    const wgCard = document.getElementById('vpn-wireguard' + sfx);
-    const ovCard = document.getElementById('vpn-openvpn' + sfx);
-    if (!wgCard || !ovCard) return;
+  // Draw sparklines
+  state.sensors.forEach((s, idx) => {
+    drawSparkline(`sparkline-${idx}`, s.history);
+  });
+}
 
-    wgCard.classList.toggle('active-vpn', wgOn);
-    ovCard.classList.toggle('active-vpn', ovOn);
+function drawSparkline(canvasId, data) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
 
-    document.getElementById('badge-wireguard' + sfx).textContent = wgOn ? 'ACTIF' : 'INACTIF';
-    document.getElementById('badge-wireguard' + sfx).className = 'vpn-badge ' + (wgOn ? 'on' : 'off');
-    document.getElementById('badge-openvpn' + sfx).textContent = ovOn ? 'ACTIF' : 'INACTIF';
-    document.getElementById('badge-openvpn' + sfx).className = 'vpn-badge ' + (ovOn ? 'on' : 'off');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
 
-    document.getElementById('btn-wireguard' + sfx).textContent = wgOn ? '■ DÉSACTIVER' : '▶ ACTIVER';
-    document.getElementById('btn-wireguard' + sfx).className = 'vpn-btn ' + (wgOn ? 'stop' : 'start');
-    document.getElementById('btn-openvpn' + sfx).textContent = ovOn ? '■ DÉSACTIVER' : '▶ ACTIVER';
-    document.getElementById('btn-openvpn' + sfx).className = 'vpn-btn ' + (ovOn ? 'stop' : 'start');
+  ctx.clearRect(0, 0, w, h);
 
-    if (wgOn) {
-      document.getElementById('wg-latency' + sfx).textContent = '12 ms';
-      document.getElementById('wg-speed' + sfx).textContent = '94 MB/s';
-      document.getElementById('wg-cpu' + sfx).textContent = '3 %';
-    } else {
-      document.getElementById('wg-latency' + sfx).textContent = '— ms';
-      document.getElementById('wg-speed' + sfx).textContent = '— MB/s';
-      document.getElementById('wg-cpu' + sfx).textContent = '— %';
-    }
-    if (ovOn) {
-      document.getElementById('ovpn-latency' + sfx).textContent = '38 ms';
-      document.getElementById('ovpn-speed' + sfx).textContent = '42 MB/s';
-      document.getElementById('ovpn-cpu' + sfx).textContent = '18 %';
-    } else {
-      document.getElementById('ovpn-latency' + sfx).textContent = '— ms';
-      document.getElementById('ovpn-speed' + sfx).textContent = '— MB/s';
-      document.getElementById('ovpn-cpu' + sfx).textContent = '— %';
-    }
+  if (data.length < 2) return;
+
+  const min = Math.min(...data) * 0.95;
+  const max = Math.max(...data) * 1.05;
+  const range = max - min || 1;
+
+  const points = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * w,
+    y: h - 4 - ((v - min) / range) * (h - 8),
+  }));
+
+  // Draw gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, 'rgba(0,200,224,0.3)');
+  gradient.addColorStop(1, 'rgba(0,200,224,0.05)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Draw line
+  ctx.beginPath();
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = 'rgba(0,200,224,0.8)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Draw points
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,200,224,1)';
+    ctx.fill();
+  });
+}
+
+function updateSensorData() {
+  state.sensors.forEach(s => {
+    // Simulate data changes
+    const change = (Math.random() - 0.5) * 0.5;
+    s.value = Math.round((s.value + change) * 10) / 10;
+    s.history.push(s.value);
+    if (s.history.length > 20) s.history.shift();
   });
 
-  const vpnActive = wgOn || ovOn;
-  document.getElementById('stat-vpn').textContent = wgOn ? 'WG' : ovOn ? 'OVP' : 'OFF';
-  document.getElementById('stat-vpn-sub').textContent = wgOn ? 'WireGuard — en ligne' : ovOn ? 'OpenVPN — en ligne' : 'Aucun VPN actif';
+  renderDashboard();
 }
 
-// ─── ATTACKS ───
+function renderSensors() {
+  const grid = document.getElementById('sensors-grid');
+  if (!grid) return;
+  grid.innerHTML = state.sensors.map((s, idx) => `
+    <div class="widget">
+      <div class="widget-header">
+        <div class="widget-title">${s.id} • ${s.name}</div>
+        <div class="widget-icon">🌡</div>
+      </div>
+      <div class="widget-value" style="color: ${s.status === 'online' ? 'var(--accent)' : 'var(--danger)'};">${s.value}</div>
+      <div class="widget-unit">${s.unit} • IP: ${s.ip}</div>
+      <canvas id="sparkline-sensor-${idx}" class="sparkline-chart" data-values='${JSON.stringify(s.history)}'></canvas>
+      <div class="widget-status">
+        <div class="widget-status-dot ${s.status}"></div>
+        <span>${s.status === 'online' ? '● En ligne' : '✕ Hors ligne'}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${s.vpnActive ? '100%' : '0%'}"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top: 8px; padding: 6px;" onclick="toggleVPN('${s.id}')">
+        ${s.vpnActive ? '✓ VPN ON' : 'VPN OFF'}
+      </button>
+      <button class="btn btn-secondary" style="margin-top: 4px; padding: 6px;" onclick="removeSensor('${s.id}')">Supprimer</button>
+    </div>
+  `).join('');
+
+  // Draw sparklines
+  state.sensors.forEach((s, idx) => {
+    drawSparkline(`sparkline-sensor-${idx}`, s.history);
+  });
+}
+
+function updateStats() {
+  const online = state.sensors.filter(s => s.status === 'online').length;
+  const offline = state.sensors.filter(s => s.status === 'offline').length;
+  const secured = state.sensors.filter(s => s.vpnActive).length;
+
+  document.getElementById('stat-online').textContent = online;
+  document.getElementById('stat-offline').textContent = offline;
+  document.getElementById('stat-secured').textContent = secured;
+  document.getElementById('stat-total').textContent = state.sensors.length;
+  document.getElementById('global-vpn-status').textContent = `${secured} capteur${secured !== 1 ? 's' : ''} protégé${secured !== 1 ? 's' : ''}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SENSOR MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+function toggleVPN(sensorId) {
+  const sensor = state.sensors.find(s => s.id === sensorId);
+  if (sensor) {
+    sensor.vpnActive = !sensor.vpnActive;
+    updateUI();
+    addMessage('ai', `✓ VPN ${sensor.vpnActive ? 'activé' : 'désactivé'} pour ${sensor.name}.`);
+  }
+}
+
+function removeSensor(sensorId) {
+  state.sensors = state.sensors.filter(s => s.id !== sensorId);
+  updateUI();
+}
+
+function manualAddSensor() {
+  const name = document.getElementById('sensor-name').value.trim();
+  const ip = document.getElementById('sensor-ip').value.trim();
+
+  if (!name || !ip) {
+    addMessage('ai', '⚠ Veuillez remplir tous les champs.');
+    return;
+  }
+
+  const id = `IOT-${String(state.sensors.length + 1).padStart(2, '0')}`;
+  const baseValue = 20 + Math.random() * 30;
+  state.sensors.push({
+    id,
+    name,
+    ip,
+    vpnActive: false,
+    status: 'online',
+    value: Math.round(baseValue * 10) / 10,
+    unit: '°C',
+    history: [baseValue - 1, baseValue - 0.5, baseValue, baseValue + 0.5, baseValue],
+  });
+  clearSensorForm();
+  updateUI();
+  addMessage('ai', `✓ Capteur ${name} ajouté avec succès!`);
+}
+
+function clearSensorForm() {
+  document.getElementById('sensor-name').value = '';
+  document.getElementById('sensor-ip').value = '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ATTACKS
+// ═══════════════════════════════════════════════════════════════
+
 const ATTACK_TYPES = [
-  { type: 'ARP', label: 'ARP Spoofing', desc: 'Man-in-the-middle réseau local', cls: 'arp' },
-  { type: 'NMAP', label: 'Scan Nmap', desc: 'Découverte ports + services', cls: 'nmap' },
-  { type: 'DOS', label: 'DoS Flood', desc: 'Saturation hping3 port 1883', cls: 'dos' },
-  { type: 'WSHARK', label: 'Wireshark', desc: 'Capture trafic réseau', cls: 'wshark' },
+  { type: 'ARP', desc: 'Man-in-the-middle', cls: 'arp' },
+  { type: 'NMAP', desc: 'Scan découverte', cls: 'nmap' },
+  { type: 'DOS', desc: 'Saturation réseau', cls: 'dos' },
+  { type: 'WSHARK', desc: 'Capture trafic', cls: 'wshark' },
 ];
 
 function addAttack(type, desc, target, blocked) {
   const now = new Date().toLocaleTimeString('fr-FR', { hour12: false });
-  const atk = { time: now, type, desc, target, blocked };
-  state.attacks.unshift(atk);
-  state.attackTypes.add(type);
+  state.attacks.unshift({ time: now, type, desc, target, blocked });
 
-  const blocked_count = state.attacks.filter(a => a.blocked).length;
-  const success_count = state.attacks.filter(a => !a.blocked).length;
+  const list = document.getElementById('attack-log');
+  if (list.querySelector('.empty-state')) {
+    list.innerHTML = '';
+  }
 
-  document.getElementById('stat-attacks').textContent = state.attacks.length;
-  document.getElementById('stat-blocked').textContent = blocked_count;
-  const ta = document.getElementById('stat-atk-total');
-  const tb = document.getElementById('stat-atk-blocked');
-  const ts2 = document.getElementById('stat-atk-success');
-  const tt = document.getElementById('stat-atk-types');
-  if (ta) ta.textContent = state.attacks.length;
-  if (tb) tb.textContent = blocked_count;
-  if (ts2) ts2.textContent = success_count;
-  if (tt) tt.textContent = state.attackTypes.size;
-
-  const row = `<div class="attack-row">
-    <span class="atk-time">${now}</span>
-    <span class="atk-type ${type.toLowerCase()}">${type}</span>
-    <span class="atk-desc">${desc}</span>
-    <span class="atk-target">${target}</span>
-    <span class="atk-result ${blocked ? 'blocked' : 'success'}">${blocked ? 'BLOQUÉ' : 'SUCCÈS'}</span>
+  const row = `<div class="log-row">
+    <span class="log-time">${now}</span>
+    <span class="log-type ${type.toLowerCase()}">${type}</span>
+    <span class="log-desc">${desc}</span>
+    <span class="log-target">${target}</span>
+    <span class="log-result ${blocked ? 'blocked' : 'success'}">${blocked ? 'BLOQUÉ' : 'SUCCÈS'}</span>
   </div>`;
 
-  ['attacks-list', 'attacks-list2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (el.querySelector('div[style]')) el.innerHTML = '';
-    el.insertAdjacentHTML('afterbegin', row);
-    if (el.children.length > 50) el.removeChild(el.lastChild);
-  });
+  list.insertAdjacentHTML('afterbegin', row);
+  if (state.attacks.length > 50) list.removeChild(list.lastChild);
 }
 
 function simulateAttack() {
   const t = ATTACK_TYPES[Math.floor(Math.random() * ATTACK_TYPES.length)];
-  const vpnOn = state.vpn.wireguard || state.vpn.openvpn;
+  const vpnOn = state.sensors.some(s => s.vpnActive);
   const blocked = vpnOn ? (Math.random() > 0.15) : false;
-  const targets = ['10.0.0.2', '10.0.0.3', '10.0.0.1', '10.0.0.4'];
-  const target = targets[Math.floor(Math.random() * targets.length)];
+  const targets = state.sensors.map(s => s.ip);
+  const target = targets.length > 0 ? targets[Math.floor(Math.random() * targets.length)] : '10.0.0.0';
   addAttack(t.type, t.desc, target, blocked);
 }
 
 function clearAttacks() {
   state.attacks = [];
-  ['attacks-list', 'attacks-list2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;">En attente d\'événements...</div>';
-  });
-  document.getElementById('stat-attacks').textContent = '0';
-  document.getElementById('stat-blocked').textContent = '0';
+  document.getElementById('attack-log').innerHTML = '<div class="empty-state"><div class="empty-icon">⌚</div><div>En attente d\'attaques...</div></div>';
 }
 
-// ─── SENSOR SIMULATION ───
-function updateSensors() {
-  state.sensors.forEach(s => {
-    const delta = (Math.random() - 0.5) * 0.04 * s.val;
-    s.val = Math.round((s.val + delta) * 100) / 100;
-    s.hist.push(s.val);
-    if (s.hist.length > 30) s.hist.shift();
-  });
-  renderSensors();
+// ═══════════════════════════════════════════════════════════════
+//  CHAT / AI
+// ═══════════════════════════════════════════════════════════════
+
+function addMessage(role, text) {
+  const messagesDiv = document.getElementById('messages');
+  const msgEl = document.createElement('div');
+  msgEl.className = `message ${role}`;
+  msgEl.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+  messagesDiv.appendChild(msgEl);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// ─── MONITORING CHARTS ───
-const chartData = { latency: [], cpu: [], bw: [], pps: [] };
-const MAX_PTS = 40;
-
-function pushMetric() {
-  const vpnOn = state.vpn.wireguard || state.vpn.openvpn;
-  const wgOn = state.vpn.wireguard;
-  const lat = vpnOn ? (wgOn ? 12 + (Math.random()-0.5)*4 : 38 + (Math.random()-0.5)*8) : 2 + Math.random()*2;
-  const cpu = vpnOn ? (wgOn ? 3 + Math.random()*2 : 18 + (Math.random()-0.5)*4) : 1 + Math.random();
-  const bw = vpnOn ? (wgOn ? 94 + (Math.random()-0.5)*10 : 42 + (Math.random()-0.5)*6) : 120 + Math.random()*10;
-  const pps = 1200 + Math.random()*200;
-
-  [['latency', lat], ['cpu', cpu], ['bw', bw], ['pps', pps]].forEach(([k, v]) => {
-    chartData[k].push(v);
-    if (chartData[k].length > MAX_PTS) chartData[k].shift();
-  });
-
-  document.getElementById('mon-cpu').textContent = cpu.toFixed(0) + '%';
-  document.getElementById('mon-lat').textContent = lat.toFixed(0) + 'ms';
-  document.getElementById('mon-bw').textContent = bw.toFixed(0) + ' MB/s';
-  document.getElementById('mon-pps').textContent = pps.toFixed(0);
-
-  drawAllCharts();
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
-function drawChart(canvasId, data, color, valId, unit) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || !data.length) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth || 300;
-  const H = 80;
-  canvas.width = W * devicePixelRatio;
-  canvas.height = H * devicePixelRatio;
-  ctx.scale(devicePixelRatio, devicePixelRatio);
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
 
-  ctx.clearRect(0, 0, W, H);
-
-  const min = Math.min(...data) * 0.9;
-  const max = Math.max(...data) * 1.1;
-  const range = max - min || 1;
-
-  const pts = data.map((v, i) => ({
-    x: (i / (MAX_PTS - 1)) * W,
-    y: H - ((v - min) / range) * (H - 8) - 4
-  }));
-
-  // Fill
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  pts.forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.lineTo(W, H);
-  ctx.closePath();
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, color + '40');
-  grad.addColorStop(1, color + '00');
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Line
-  ctx.beginPath();
-  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Last dot
-  if (pts.length > 0) {
-    const last = pts[pts.length - 1];
-    ctx.beginPath();
-    ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-
-  const lastVal = data[data.length - 1];
-  const valEl = document.getElementById(valId);
-  if (valEl) valEl.textContent = lastVal.toFixed(lastVal < 10 ? 1 : 0) + ' ' + unit;
-}
-
-function drawAllCharts() {
-  drawChart('chart-latency', chartData.latency, '#00e5ff', 'chart-lat-val', 'ms');
-  drawChart('chart-cpu',     chartData.cpu,     '#00ff88', 'chart-cpu-val', '%');
-  drawChart('chart-bw',      chartData.bw,      '#00e5ff', 'chart-bw-val',  'MB/s');
-  drawChart('chart-pps',     chartData.pps,     '#00ff88', 'chart-pps-val', '');
-}
-
-// ─────────────────────────────────────────────
-//  WEBSOCKET — connexion à l'API FastAPI réelle
-// ─────────────────────────────────────────────
-
-let ws = null;
-let wsMode = 'simulation'; // 'simulation' | 'live'
-let reconnectTimer = null;
-
-// IP de l'API — modifiable depuis le panneau de config
-let API_HOST = localStorage.getItem('api_host') || '192.168.1.50';
-let API_PORT = localStorage.getItem('api_port') || '8000';
-
-function getWsUrl() {
-  return `ws://${API_HOST}:${API_PORT}/ws`;
-}
-
-function connectWebSocket() {
-  if (ws) { ws.close(); ws = null; }
-  clearTimeout(reconnectTimer);
-
-  const dot = document.getElementById('ws-dot');
-  const label = document.getElementById('ws-label');
-  dot.className = 'conn-dot';
-  label.textContent = 'CONNEXION...';
-
-  try {
-    ws = new WebSocket(getWsUrl());
-
-    ws.onopen = () => {
-      wsMode = 'live';
-      dot.className = 'conn-dot live';
-      label.textContent = 'LIVE API';
-      // Arrêter la simulation auto quand on est en live
-      clearInterval(simSensorInterval);
-      clearInterval(simMetricInterval);
-      clearInterval(simAttackInterval);
-      console.log('[WS] Connecté à', getWsUrl());
-    };
-
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      handleWsMessage(msg);
-    };
-
-    ws.onclose = () => {
-      wsMode = 'simulation';
-      dot.className = 'conn-dot error';
-      label.textContent = 'DÉCONNECTÉ';
-      // Relancer la simulation
-      startSimulation();
-      // Reconnexion auto dans 5s
-      reconnectTimer = setTimeout(connectWebSocket, 5000);
-      console.log('[WS] Déconnecté — reconnexion dans 5s');
-    };
-
-    ws.onerror = () => {
-      dot.className = 'conn-dot error';
-      label.textContent = 'ERREUR WS';
-    };
-
-  } catch(err) {
-    dot.className = 'conn-dot error';
-    label.textContent = 'SIMULÉ';
-    console.log('[WS] Impossible de connecter :', err.message);
-  }
-}
-
-// ─── HANDLER MESSAGES WEBSOCKET RÉELS ───
-function handleWsMessage(msg) {
-  if (msg.type === 'history') {
-    // Reçu à la connexion : historique complet
-    msg.attacks.forEach(a => {
-      addAttack(a.data.type, a.data.description, a.data.target, a.data.blocked);
-    });
-    msg.sensors.forEach(s => {
-      updateSensorFromApi(s.data);
-    });
-    msg.metrics.forEach(m => {
-      pushMetricFromApi(m.data);
-    });
+  if (!state.apiKey) {
+    addMessage('ai', 'Configurer d\'abord votre clé API pour utiliser l\'assistant.');
     return;
   }
 
-  if (msg.type === 'attack') {
-    const d = msg.data;
-    addAttack(d.type, d.description, d.target, d.blocked);
-  }
+  addMessage('user', msg);
+  input.value = '';
 
-  if (msg.type === 'sensor') {
-    updateSensorFromApi(msg.data);
-  }
-
-  if (msg.type === 'metrics') {
-    pushMetricFromApi(msg.data);
-  }
-}
-
-// ─── MISE À JOUR CAPTEUR DEPUIS API ───
-function updateSensorFromApi(data) {
-  const idx = state.sensors.findIndex(s => s.id === data.sensor_id);
-  if (idx >= 0) {
-    state.sensors[idx].val = data.value;
-    state.sensors[idx].unit = data.unit;
-    state.sensors[idx].status = data.status;
-  } else {
-    state.sensors.push({
-      id: data.sensor_id, name: data.name,
-      val: data.value, unit: data.unit,
-      status: data.status, hist: []
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': state.apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-20250805',
+        max_tokens: 400,
+        system: `Tu es un assistant de gestion IoT VPN. Tu aides avec la sécurité et la gestion des capteurs IoT.
+Réponds en français, sois concis et amical.`,
+        messages: [{ role: 'user', content: msg }],
+      }),
     });
+
+    if (!response.ok) throw new Error('Erreur API');
+    const data = await response.json();
+    addMessage('ai', data.content[0].text);
+
+  } catch (err) {
+    addMessage('ai', `⚠ Erreur : ${err.message}`);
   }
-  renderSensors();
 }
 
-// ─── MÉTRIQUES DEPUIS API ───
-function pushMetricFromApi(data) {
-  chartData.latency.push(data.latency_ms);
-  chartData.cpu.push(data.cpu_percent);
-  chartData.bw.push(data.bandwidth_mbps);
-  chartData.pps.push(data.packets_per_sec || 0);
-  ['latency','cpu','bw','pps'].forEach(k => {
-    if (chartData[k].length > MAX_PTS) chartData[k].shift();
-  });
+// ═══════════════════════════════════════════════════════════════
+//  API KEY MODAL
+// ═══════════════════════════════════════════════════════════════
 
-  document.getElementById('mon-cpu').textContent = data.cpu_percent.toFixed(0) + '%';
-  document.getElementById('mon-lat').textContent = data.latency_ms.toFixed(0) + 'ms';
-  document.getElementById('mon-bw').textContent = data.bandwidth_mbps.toFixed(0) + ' MB/s';
-  document.getElementById('mon-pps').textContent = (data.packets_per_sec || 0).toFixed(0);
-
-  drawAllCharts();
+function saveAPIKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (key) {
+    state.apiKey = key;
+    localStorage.setItem('anthropic-api-key', key);
+    document.getElementById('api-modal').classList.remove('active');
+    addMessage('ai', '✓ API configurée ! Prêt à vous aider.');
+  }
 }
 
-// ─── PANNEAU CONFIG IP ───
-function openConfig() {
-  document.getElementById('config-panel').style.display = 'flex';
-  document.getElementById('cfg-host').value = API_HOST;
-  document.getElementById('cfg-port').value = API_PORT;
-}
-function closeConfig() {
-  document.getElementById('config-panel').style.display = 'none';
-}
-function saveConfig() {
-  API_HOST = document.getElementById('cfg-host').value.trim();
-  API_PORT = document.getElementById('cfg-port').value.trim();
-  localStorage.setItem('api_host', API_HOST);
-  localStorage.setItem('api_port', API_PORT);
-  closeConfig();
-  connectWebSocket();
+function skipAPIKey() {
+  document.getElementById('api-modal').classList.remove('active');
+  addMessage('ai', 'D\'accord ! Comment puis-je vous aider ?');
 }
 
-// ─── SIMULATION (fallback si pas d'API) ───
-let simSensorInterval, simMetricInterval, simAttackInterval;
+// ═══════════════════════════════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════════════════════════════
 
-function startSimulation() {
-  clearInterval(simSensorInterval);
-  clearInterval(simMetricInterval);
-  clearInterval(simAttackInterval);
-  simSensorInterval = setInterval(updateSensors, 2500);
-  simMetricInterval = setInterval(pushMetric, 1500);
-  simAttackInterval = setInterval(() => {
-    if (Math.random() < 0.18) simulateAttack();
-  }, 4000);
-}
+document.getElementById('chat-input').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
 
-// ─── INIT ───
-renderSensors();
-updateVPNUI();
-for (let i = 0; i < 20; i++) pushMetric();
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
 
-// Attaques initiales simulées
-setTimeout(() => addAttack('NMAP',   'Scan découverte réseau',       '10.0.0.0/24', false), 600);
-setTimeout(() => addAttack('WSHARK', 'Capture trafic IoT',           '10.0.0.2',    false), 1200);
-setTimeout(() => addAttack('ARP',    'Man-in-the-middle réseau local','10.0.0.1',    true),  1800);
+document.addEventListener('DOMContentLoaded', () => {
+  updateUI();
 
-// Démarrer en mode simulation, puis tenter WebSocket
-startSimulation();
-setTimeout(connectWebSocket, 500);
+  if (!state.apiKey) {
+    document.getElementById('api-modal').classList.add('active');
+  } else {
+    addMessage('ai', 'Bienvenue ! Comment puis-je vous aider ?');
+  }
+
+  setTimeout(() => addAttack('NMAP', 'Scan découverte', '10.0.0.0/24', false), 800);
+  setTimeout(() => addAttack('WSHARK', 'Capture trafic', '192.168.1.10', false), 1200);
+
+  // Live data updates - refresh charts every 2.5 seconds
+  setInterval(() => {
+    updateSensorData();
+    updateVPNData();
+  }, 2500);
+});
 </script>
 
-<!-- ─── PANNEAU CONFIG API ─── -->
-<div id="config-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div style="background:#0d1318;border:1px solid rgba(0,229,255,0.2);border-radius:16px;padding:32px;width:360px;display:flex;flex-direction:column;gap:20px">
-    <div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:#e8edf2">⚙ CONNEXION API</div>
-    <div style="font-size:12px;color:#5a6a7a;line-height:1.6">
-      Entre l'IP de ta machine qui fait tourner <code style="color:#00e5ff">uvicorn main:app</code>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div>
-        <label style="font-size:11px;color:#5a6a7a;font-family:'Space Mono',monospace;display:block;margin-bottom:4px">IP SERVEUR</label>
-        <input id="cfg-host" type="text" placeholder="192.168.1.50"
-          style="width:100%;background:#111820;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#e8edf2;font-family:'Space Mono',monospace;font-size:13px;outline:none"/>
-      </div>
-      <div>
-        <label style="font-size:11px;color:#5a6a7a;font-family:'Space Mono',monospace;display:block;margin-bottom:4px">PORT</label>
-        <input id="cfg-port" type="text" placeholder="8000"
-          style="width:100%;background:#111820;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#e8edf2;font-family:'Space Mono',monospace;font-size:13px;outline:none"/>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px">
-      <button onclick="saveConfig()"
-        style="flex:1;background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.25);color:#00e5ff;padding:10px;border-radius:8px;font-family:'Space Mono',monospace;font-size:12px;cursor:pointer;font-weight:700">
-        CONNECTER
-      </button>
-      <button onclick="closeConfig()"
-        style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#5a6a7a;padding:10px;border-radius:8px;font-family:'Space Mono',monospace;font-size:12px;cursor:pointer">
-        ANNULER
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Bouton config flottant -->
-<button onclick="openConfig()"
-  title="Configurer l'IP de l'API"
-  style="position:fixed;bottom:24px;right:24px;z-index:200;
-    background:#0d1318;border:1px solid rgba(0,229,255,0.2);
-    color:#00e5ff;width:44px;height:44px;border-radius:50%;
-    font-size:18px;cursor:pointer;
-    box-shadow:0 0 20px rgba(0,229,255,0.1);
-    transition:all 0.2s"
-  onmouseover="this.style.background='rgba(0,229,255,0.1)'"
-  onmouseout="this.style.background='#0d1318'">⚙
 </body>
 </html>

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────
-#  IoT VPN Shield — API FastAPI
+#  IoT VPN Shield — FastAPI Backend
 #  Lance avec : uvicorn main:app --host 0.0.0.0 --port 8000
 # ─────────────────────────────────────────────
 
@@ -22,29 +22,30 @@ app.add_middleware(
 )
 
 # ── Sert le dashboard HTML si présent dans le dossier static/
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+if os.path.exists("../dashboard"):
+    app.mount("/", StaticFiles(directory="../dashboard", html=True), name="static")
 
 
 # ─────────────────────────────────────────────
 #  MODÈLES DE DONNÉES
 # ─────────────────────────────────────────────
 
-class AttackEvent(BaseModel):
-    type: str                     # "ARP", "NMAP", "DOS", "WSHARK"
-    description: str              # texte libre
-    target: str                   # IP cible ex: "10.0.0.2"
-    blocked: bool                 # True si le VPN a bloqué l'attaque
-
 class SensorEvent(BaseModel):
     sensor_id: str                # "IOT-01"
     name: str                     # "Température Bureau"
+    ip: str                       # "192.168.1.50"
     value: float                  # 23.4
     unit: str                     # "°C"
     status: str                   # "online" | "warning" | "offline"
+    vpn_active: bool              # True/False
+
+class AttackEvent(BaseModel):
+    type: str                     # "ARP", "NMAP", "DOS", "WSHARK"
+    description: str              # texte libre
+    target: str                   # IP cible
+    blocked: bool                 # True si le VPN a bloqué l'attaque
 
 class MetricsEvent(BaseModel):
-    vpn: str                      # "wireguard" | "openvpn" | "none"
     latency_ms: float             # 12.3
     cpu_percent: float            # 3.1
     bandwidth_mbps: float         # 94.2
@@ -65,7 +66,8 @@ class ConnectionManager:
         print(f"[WS] Client connecté — {len(self.active)} connecté(s)")
 
     def disconnect(self, ws: WebSocket):
-        self.active.remove(ws)
+        if ws in self.active:
+            self.active.remove(ws)
         print(f"[WS] Client déconnecté — {len(self.active)} connecté(s)")
 
     async def broadcast(self, data: dict):
@@ -78,19 +80,19 @@ class ConnectionManager:
             except Exception:
                 dead.append(ws)
         for ws in dead:
-            self.active.remove(ws)
+            self.disconnect(ws)
 
 manager = ConnectionManager()
 
 
 # ─────────────────────────────────────────────
-#  STOCKAGE EN MÉMOIRE (historique session)
+#  STOCKAGE EN MÉMOIRE
 # ─────────────────────────────────────────────
 
 history = {
-    "attacks": [],    # 50 dernières attaques
-    "sensors": {},    # état actuel de chaque capteur
-    "metrics": [],    # 100 dernières métriques
+    "sensors": {},
+    "attacks": [],
+    "metrics": [],
 }
 
 
@@ -104,13 +106,13 @@ async def websocket_endpoint(websocket: WebSocket):
     # Envoie l'historique au nouveau client dès sa connexion
     await websocket.send_text(json.dumps({
         "type": "history",
-        "attacks": history["attacks"][-20:],
         "sensors": list(history["sensors"].values()),
+        "attacks": history["attacks"][-20:],
         "metrics": history["metrics"][-30:],
     }))
     try:
         while True:
-            await websocket.receive_text()   # garde la connexion vivante
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -119,18 +121,24 @@ async def websocket_endpoint(websocket: WebSocket):
 #  ENDPOINTS REST
 # ─────────────────────────────────────────────
 
-@app.post("/attack-event")
+@app.post("/api/sensor")
+async def receive_sensor(event: SensorEvent):
+    """Reçoit les données des capteurs IoT"""
+    payload = {
+        "type": "sensor",
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "data": event.dict()
+    }
+    history["sensors"][event.sensor_id] = payload
+
+    await manager.broadcast(payload)
+    print(f"[SENSOR] {event.sensor_id} = {event.value}{event.unit} ({event.status})")
+    return {"status": "ok", "broadcast_to": len(manager.active)}
+
+
+@app.post("/api/attack")
 async def receive_attack(event: AttackEvent):
-    """
-    Appelé par la VM Kali Linux à chaque attaque.
-    Exemple :
-        requests.post("http://192.168.x.x:8000/attack-event", json={
-            "type": "ARP",
-            "description": "Man-in-the-middle",
-            "target": "10.0.0.2",
-            "blocked": True
-        })
-    """
+    """Reçoit les attaques Kali Linux"""
     payload = {
         "type": "attack",
         "time": datetime.now().strftime("%H:%M:%S"),
@@ -145,44 +153,9 @@ async def receive_attack(event: AttackEvent):
     return {"status": "ok", "broadcast_to": len(manager.active)}
 
 
-@app.post("/sensor-event")
-async def receive_sensor(event: SensorEvent):
-    """
-    Appelé par la VM IoT client à chaque envoi de données capteur.
-    Exemple :
-        requests.post("http://192.168.x.x:8000/sensor-event", json={
-            "sensor_id": "IOT-01",
-            "name": "Température Bureau",
-            "value": 23.4,
-            "unit": "°C",
-            "status": "online"
-        })
-    """
-    payload = {
-        "type": "sensor",
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "data": event.dict()
-    }
-    history["sensors"][event.sensor_id] = payload
-
-    await manager.broadcast(payload)
-    print(f"[SENSOR] {event.sensor_id} = {event.value}{event.unit} ({event.status})")
-    return {"status": "ok", "broadcast_to": len(manager.active)}
-
-
-@app.post("/metrics-event")
+@app.post("/api/metrics")
 async def receive_metrics(event: MetricsEvent):
-    """
-    Appelé par la VM Monitoring (Prometheus/Grafana) après chaque mesure.
-    Exemple :
-        requests.post("http://192.168.x.x:8000/metrics-event", json={
-            "vpn": "wireguard",
-            "latency_ms": 12.3,
-            "cpu_percent": 3.1,
-            "bandwidth_mbps": 94.2,
-            "packets_per_sec": 1240
-        })
-    """
+    """Reçoit les métriques VPN"""
     payload = {
         "type": "metrics",
         "time": datetime.now().strftime("%H:%M:%S"),
@@ -193,22 +166,23 @@ async def receive_metrics(event: MetricsEvent):
         history["metrics"].pop(0)
 
     await manager.broadcast(payload)
-    print(f"[METRICS] VPN={event.vpn} lat={event.latency_ms}ms cpu={event.cpu_percent}%")
+    print(f"[METRICS] Latence={event.latency_ms}ms CPU={event.cpu_percent}%")
     return {"status": "ok", "broadcast_to": len(manager.active)}
 
 
-@app.get("/status")
+@app.get("/api/status")
 async def get_status():
-    """Vérifie que l'API tourne — utile pour déboguer."""
+    """Vérifie que l'API tourne"""
     return {
         "status": "running",
         "ws_clients": len(manager.active),
-        "attacks_logged": len(history["attacks"]),
         "sensors_tracked": len(history["sensors"]),
+        "attacks_logged": len(history["attacks"]),
         "metrics_logged": len(history["metrics"]),
     }
 
 
-@app.get("/")
-async def root():
-    return {"message": "IoT VPN Shield API — voir /docs pour la documentation"}
+@app.get("/api/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "healthy"}
