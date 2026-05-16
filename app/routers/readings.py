@@ -1,22 +1,9 @@
-"""
-app/routers/readings.py
-GET /readings        → last 10 rows  (dashboard polls this every 3s)
-GET /readings/stats  → sidebar counters + VPN gauge
-GET /readings/{id}   → one sensor history
-"""
 from fastapi import APIRouter, Query
 from typing import Optional
 from app.models.db import get_conn
 from app.config import settings
 
 router = APIRouter()
-
-MOCK = [
-    {"id":1,"sensor_id":"IOT-01","temperature":23.4,"humidity":None,"pressure":None,
-     "battery":87,"unit":"°C","status":"ok","received_at":"2026-05-17T08:00:00"},
-    {"id":2,"sensor_id":"IOT-02","temperature":None,"humidity":61.2,"pressure":None,
-     "battery":72,"unit":"%","status":"ok","received_at":"2026-05-17T08:00:02"},
-]
 
 @router.get("/")
 def get_readings(limit: int = Query(10, ge=1, le=200), sensor_id: Optional[str] = None):
@@ -26,8 +13,7 @@ def get_readings(limit: int = Query(10, ge=1, le=200), sensor_id: Optional[str] 
         if sensor_id:
             q += " WHERE sensor_id = ?"; p.append(sensor_id)
         q += " ORDER BY received_at DESC LIMIT ?"; p.append(limit)
-        rows = [dict(r) for r in conn.execute(q, p).fetchall()]
-        return rows if rows else (MOCK[:limit] if settings.DEMO_MODE else [])
+        return [dict(r) for r in conn.execute(q, p).fetchall()]
     finally:
         conn.close()
 
@@ -39,16 +25,15 @@ def get_stats():
         active  = conn.execute("SELECT COUNT(*) FROM sensors WHERE status='active'").fetchone()[0]
         n_reads = conn.execute("SELECT COUNT(*) FROM telemetry").fetchone()[0]
         last    = conn.execute("SELECT received_at FROM telemetry ORDER BY received_at DESC LIMIT 1").fetchone()
-        used    = active if total else 2
         return {
-            "sensors_total":  total  or 2,
-            "sensors_active": active or 2,
-            "sensors_offline": (total - active) if total else 0,
-            "total_readings": n_reads,
-            "vpn_capacity":   settings.VPN_MAX_PEERS,
-            "vpn_used":       used,
-            "vpn_pct":        round((used / settings.VPN_MAX_PEERS) * 100),
-            "last_reading":   last[0] if last else None,
+            "sensors_total":   total,
+            "sensors_active":  active,
+            "sensors_offline": total - active,
+            "total_readings":  n_reads,
+            "vpn_capacity":    settings.VPN_MAX_PEERS,
+            "vpn_used":        active,
+            "vpn_pct":         round((active / settings.VPN_MAX_PEERS) * 100) if active else 0,
+            "last_reading":    last[0] if last else None,
         }
     finally:
         conn.close()

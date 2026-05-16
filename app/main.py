@@ -1,63 +1,82 @@
-import sys
+"""
+Colleague A owns this file.
+
+Serves:
+  - Static dashboard at GET /  (dashboard/index.html)
+  - Health check at /health
+  - Starts MQTT bridge on startup
+"""
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
-import subprocess
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+import logging
 
-# Ajout du dossier racine au PYTHONPATH pour les imports relatifs
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from app.config import settings
+from app.models.db import init_db
+from app.routers import readings, sensors, alarms, vpn
 
-from app.services.database import init_db, register_sensor, get_status
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [APP] %(message)s",
+    datefmt="%H:%M:%S"
+)
+log = logging.getLogger(__name__)
 
-app = FastAPI(title="IoT VPN Monitor | ENSA RSSP 2026")
-templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+# ── Path to dashboard static files ─────────────────────────────────────────
+BASE_DIR       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DASHBOARD_DIR  = os.path.join(BASE_DIR, "dashboard")
 
-class RegisterRequest(BaseModel):
-    sensor_id: str
-    ip_address: str
-    sensor_type: str = "temperature"
 
-@app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup: init DB + start MQTT bridge. Shutdown: clean up."""
+    # 1. Create SQLite tables if they don't exist
+    log.info("Initialising database...")
+    init_db()
+    log.info(f"Database ready: {settings.DB_PATH}")
 
-@app.get("/api/status")
-async def api_status():
-    try:
-        return get_status()
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+    # 2. Start MQTT bridge (background thread, non-blocking)
+    log.info("Starting MQTT bridge...")
+    from mqtt_bridge import start_bridge, register_broadcast
+    start_bridge()
+    log.info(f"MQTT bridge listening on {settings.MQTT_HOST}:{settings.MQTT_PORT}")
 
-@app.post("/api/register")
-async def register_sensor_endpoint(req: RegisterRequest):
-    if req.sensor_type not in ["temperature", "humidity", "pressure"]:
-        raise HTTPException(status_code=400, detail="Type de capteur invalide")
+    yield  # app runs
 
-    # Test ping
-    cmd = ["ping", "-c", "1", "-W", "2", req.ip_address]
-    try:
-        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
-        if res.returncode != 0:
-            raise HTTPException(status_code=400, detail="❌ Capteur injoignable (Ping échoué)")
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=408, detail="⏱️ Timeout ping")
-    except FileNotFoundError:
-        # Fallback Windows
-        res = subprocess.run(["ping", "-n", "1", "-w", "2", req.ip_address], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if res.returncode != 0:
-            raise HTTPException(status_code=400, detail="❌ Capteur injoignable")
+    log.info("Shutting down.")
 
-    try:
-        register_sensor(req.sensor_id, req.ip_address, req.sensor_type)
-        return {"message": f"✅ Capteur {req.sensor_id} enregistré et vérifié"}
-    except Exception as e:
-        if "UNIQUE" in str(e) or "duplicate" in str(e):
-            raise HTTPException(status_code=409, detail="⚠️ Capteur déjà enregistré")
-        raise HTTPException(status_code=500, detail=str(e))
 
-if __name__ == "__main__":
-    import uvicorn
-    init_db()  # Crée la DB au démarrage
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+app = FastAPI(
+    title="IoT VPN Gateway",
+    version="1.0",
+    lifespan=lifespan,
+)
+
+# ── API routers ─────────────────────────────────────────────────────────────
+app.include_router(readings.router,   prefix="/readings",  tags=["readings"])
+app.include_router(sensors.router,    prefix="/sensors",   tags=["sensors"])
+app.include_router(alarms.router,     prefix="/alarms",    tags=["alarms"])
+app.include_router(vpn.router,        prefix="/vpn",       tags=["vpn"])
+
+# ── Health check ────────────────────────────────────────────────────────────
+@app.get("/health", tags=["system"])
+def health():
+    return {
+        "status":    "healthy",
+        "demo_mode": settings.DEMO_MODE,
+        "db":        settings.DB_PATH,
+        "mqtt":      f"{settings.MQTT_HOST}:{settings.MQTT_PORT}",
+    }
+
+# ── Serve dashboard static files ────────────────────────────────────────────
+# Mount JS and CSS as static
+app.mount("/js",  StaticFiles(directory=os.path.join(DASHBOARD_DIR, "js")),  name="js")
+app.mount("/css", StaticFiles(directory=os.path.join(DASHBOARD_DIR, "css")), name="css")
+
+# Serve index.html at root /
+@app.get("/", include_in_schema=False)
+def serve_dashboard():
+    return FileResponse(os.path.join(DASHBOARD_DIR, "index.html"))

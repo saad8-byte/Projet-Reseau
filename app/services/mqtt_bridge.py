@@ -3,7 +3,7 @@ import logging
 import sqlite3
 import paho.mqtt.client as mqtt
 
-DB_PATH = "/home/iot-client-1/Projet-Reseau/database/iot_telemetry.db"
+DB_PATH = "/home/imrane/Desktop/Projet-Reseau/database/iot_telemetry.db"
 MQTT_BROKER = "127.0.0.1"
 MQTT_PORT = 1883
 MQTT_TOPIC = "iot/sensors/+/telemetry"
@@ -36,17 +36,32 @@ def on_message(client, userdata, msg):
             raise ValueError(f"Invalid sensor_type: {payload['sensor_type']}")
         conn = get_db_connection()
         cursor = conn.cursor()
+        # Map value to correct column based on sensor_type
+        sensor_type = payload["sensor_type"]
+        value = float(payload["value"])
+        temperature = value if sensor_type == "temperature" else None
+        humidity    = value if sensor_type == "humidity"    else None
+        pressure    = value if sensor_type == "pressure"    else None
+
+        # Auto-register sensor if not exists
         cursor.execute("""
-            INSERT OR REPLACE INTO telemetry
-            (sensor_id, sensor_type, value, battery, status, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR IGNORE INTO sensors (sensor_id, sensor_type, status)
+            VALUES (?, ?, 'active')
+        """, (payload["sensor_id"], payload["sensor_type"]))
+
+        cursor.execute("""
+            INSERT INTO telemetry
+            (sensor_id, timestamp, temperature, humidity, pressure, battery, unit, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             payload["sensor_id"],
-            payload["sensor_type"],
-            float(payload["value"]),
+            payload["timestamp"],
+            temperature,
+            humidity,
+            pressure,
             int(payload["battery"]),
+            payload.get("unit", ""),
             payload["status"],
-payload["timestamp"]
         ))
         conn.commit()
         conn.close()

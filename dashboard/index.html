@@ -947,29 +947,72 @@ header {
         </div>
       </div>
       <div class="page-content">
-        <div class="form-card">
-          <div class="form-card-title">Ajouter un capteur</div>
-          <div class="form-group">
-            <label class="form-label">Nom</label>
-            <input type="text" class="form-input" id="sensor-name" placeholder="Température Bureau" />
+
+        <!-- Add form -->
+        <div class="form-card" style="margin-bottom:24px">
+          <div class="form-card-title">➕ Ajouter un capteur</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:140px">
+              <label class="form-label">ID Capteur</label>
+              <input type="text" class="form-input" id="sensor-name" placeholder="IOT-01" />
+            </div>
+            <div style="flex:1;min-width:140px">
+              <label class="form-label">Adresse IP</label>
+              <input type="text" class="form-input" id="sensor-ip" placeholder="10.0.0.2" />
+            </div>
+            <div style="flex:1;min-width:140px">
+              <label class="form-label">Type</label>
+              <select class="form-input" id="sensor-type">
+                <option value="temperature">🌡 Température</option>
+                <option value="humidity">💧 Humidité</option>
+                <option value="pressure">🌬 Pression</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;padding-bottom:1px">
+              <button class="btn btn-primary" id="btn-add" onclick="addSensorFromForm()">Ajouter</button>
+              <button class="btn btn-secondary" onclick="clearSensorForm()">Effacer</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Adresse IP</label>
-            <input type="text" class="form-input" id="sensor-ip" placeholder="192.168.1.50" />
+          <div id="form-feedback" style="display:none;margin-top:10px;font-size:13px;padding:8px 12px;border-radius:6px"></div>
+        </div>
+
+        <!-- Sensors table -->
+        <div class="widget" style="padding:0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;
+            padding:14px 20px;border-bottom:1px solid var(--border2)">
+            <div style="font-size:13px;font-weight:600;text-transform:uppercase;
+              letter-spacing:1px;color:var(--text-sub)">
+              Capteurs enregistrés
+            </div>
+            <div id="sensor-count" style="font-size:12px;color:var(--text-sub)">0 capteur(s)</div>
           </div>
-          <div class="form-buttons">
-            <button class="btn btn-primary" onclick="manualAddSensor()">Ajouter</button>
-            <button class="btn btn-secondary" onclick="clearSensorForm()">Annuler</button>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px" id="sensors-table">
+              <thead>
+                <tr style="background:rgba(0,0,0,0.2)">
+                  <th style="padding:10px 20px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">ID</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Type</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">IP</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Valeur</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Batterie</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Statut</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Dernière donnée</th>
+                  <th style="padding:10px 16px;text-align:left;color:var(--text-sub);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Action</th>
+                </tr>
+              </thead>
+              <tbody id="sensors-tbody">
+                <tr>
+                  <td colspan="8" style="padding:40px;text-align:center;color:var(--text-sub)">
+                    Chargement...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div style="margin-top: 24px; margin-bottom: 16px;">
-          <div class="page-title" style="font-size: 14px;">Tous les capteurs</div>
-        </div>
-        <div class="dashboard-grid" id="sensors-grid"></div>
       </div>
     </div>
-
     <!-- PAGE: VPN STATS -->
     <div class="page" id="page-vpn-stats">
       <div class="page-header">
@@ -1193,560 +1236,560 @@ header {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  STATE
+//  IoT VPN Dashboard — 100% Real Data
+//  No mock, no Math.random for sensor data
+//  All values come from FastAPI backend
 // ═══════════════════════════════════════════════════════════════
 
 const state = {
-  sensors: [
-    { id: 'IOT-01', name: 'Température Bureau', ip: '192.168.1.10', vpnActive: true, status: 'online', value: 23.4, unit: '°C', history: [22.1, 22.5, 22.8, 23.1, 23.0, 23.2, 23.4] },
-    { id: 'IOT-02', name: 'Humidité Salle Serveur', ip: '192.168.1.11', vpnActive: true, status: 'online', value: 58.2, unit: '%', history: [55.2, 56.1, 56.8, 57.2, 57.8, 58.0, 58.2] },
-    { id: 'IOT-03', name: 'CO₂ Laboratoire', ip: '192.168.1.12', vpnActive: false, status: 'offline', value: 412, unit: 'ppm', history: [410, 410, 411, 411, 411, 412, 412] },
-  ],
-  attacks: [],
-  apiKey: localStorage.getItem('anthropic-api-key') || null,
-  aiPanelOpen: false,
-  vpn: {
-    active: true,
-    protocol: 'WireGuard',
-    latency: 12,
-    bandwidth: 94,
-    cpu: 3,
-    tunnels: 2,
-    uptime: '2d 15h',
-    latencyHistory: [18, 16, 14, 12, 11, 12, 13, 12, 11, 12, 13, 12, 12, 11, 12, 13, 14, 13, 12, 12],
-    bandwidthHistory: [85, 88, 90, 92, 94, 93, 92, 94, 95, 94, 93, 92, 91, 90, 88, 86, 84, 85, 87, 89],
-    cpuHistory: [5, 4, 4, 3, 3, 2, 3, 3, 4, 3, 3, 2, 2, 2, 3, 3, 4, 3, 3, 3],
-  },
+  sensors:   [],
+  readings:  [],
+  alarms:    [],
+  stats:     {},
+  startTime: Date.now(),
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  UI NAVIGATION
-// ═══════════════════════════════════════════════════════════════
-
-function showPage(pageName, navEl) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(`page-${pageName}`).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  navEl.classList.add('active');
-  updateUI();
+// ── API helpers ────────────────────────────────────────────────
+async function apiFetch(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch(e) { console.error(`[API] ${url}:`, e.message); return null; }
 }
 
-function toggleAIPanel() {
-  const panel = document.getElementById('ai-panel');
-  state.aiPanelOpen = !state.aiPanelOpen;
-  if (state.aiPanelOpen) {
-    panel.classList.add('active');
-    document.getElementById('chat-input').focus();
-  } else {
-    panel.classList.remove('active');
-  }
+async function apiPost(url, body) {
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return await r.json();
+  } catch(e) { console.error(`[POST] ${url}:`, e.message); return null; }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  RENDERING
-// ═══════════════════════════════════════════════════════════════
-
-function updateVPNStats() {
-  // Update VPN metrics display
-  document.getElementById('vpn-status').textContent = state.vpn.active ? 'ACTIF' : 'INACTIF';
-  document.getElementById('vpn-status').style.color = state.vpn.active ? 'var(--accent2)' : 'var(--danger)';
-  document.getElementById('vpn-protocol').textContent = state.vpn.protocol;
-  document.getElementById('vpn-latency').textContent = `${state.vpn.latency} ms`;
-  document.getElementById('vpn-bandwidth').textContent = `${state.vpn.bandwidth} MB/s`;
-  document.getElementById('vpn-cpu').textContent = `${state.vpn.cpu}%`;
-  document.getElementById('vpn-tunnels').textContent = state.vpn.tunnels;
-  document.getElementById('vpn-uptime').textContent = state.vpn.uptime;
-
-  // Update number of tunnels based on VPN active sensors
-  state.vpn.tunnels = state.sensors.filter(s => s.vpnActive).length;
-  document.getElementById('vpn-tunnels').textContent = state.vpn.tunnels;
-
-  // Update full page cards if they exist
-  if (document.getElementById('vpn-status-card')) {
-    document.getElementById('vpn-status-card').textContent = state.vpn.active ? 'ACTIF' : 'INACTIF';
-    document.getElementById('vpn-status-card').style.color = state.vpn.active ? 'var(--accent2)' : 'var(--danger)';
-  }
-  if (document.getElementById('vpn-protocol-card')) {
-    document.getElementById('vpn-protocol-card').textContent = state.vpn.protocol;
-  }
-  if (document.getElementById('vpn-tunnels-card')) {
-    document.getElementById('vpn-tunnels-card').textContent = state.vpn.tunnels;
-  }
-  if (document.getElementById('vpn-uptime-card')) {
-    document.getElementById('vpn-uptime-card').textContent = state.vpn.uptime;
-  }
-  if (document.getElementById('vpn-latency-card')) {
-    document.getElementById('vpn-latency-card').textContent = `${state.vpn.latency} ms`;
-  }
-  if (document.getElementById('vpn-bandwidth-card')) {
-    document.getElementById('vpn-bandwidth-card').textContent = `${state.vpn.bandwidth} MB/s`;
-  }
-  if (document.getElementById('vpn-cpu-card')) {
-    document.getElementById('vpn-cpu-card').textContent = `${state.vpn.cpu}%`;
-  }
-
-  // Draw VPN charts
-  drawVPNChart('vpn-chart-latency', state.vpn.latencyHistory, 0, 30);
-  drawVPNChart('vpn-chart-bandwidth', state.vpn.bandwidthHistory, 0, 100);
-  drawVPNChart('vpn-chart-cpu', state.vpn.cpuHistory, 0, 10);
-  
-  // Draw full-size charts
-  drawVPNChartFull('vpn-chart-latency-full', state.vpn.latencyHistory, 0, 30);
-  drawVPNChartFull('vpn-chart-bandwidth-full', state.vpn.bandwidthHistory, 0, 100);
-  drawVPNChartFull('vpn-chart-cpu-full', state.vpn.cpuHistory, 0, 10);
+async function apiDelete(url) {
+  try {
+    const r = await fetch(url, { method: 'DELETE' });
+    return await r.json();
+  } catch(e) { console.error(`[DELETE] ${url}:`, e.message); return null; }
 }
 
-function drawVPNChart(canvasId, data, minVal, maxVal) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
+async function apiPut(url) {
+  try {
+    const r = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    return await r.json();
+  } catch(e) { console.error(`[PUT] ${url}:`, e.message); return null; }
+}
 
+// ── Main refresh every 3s ──────────────────────────────────────
+async function refreshAll() {
+  const [sensors, readings, stats, alarms] = await Promise.all([
+    apiFetch('/sensors/'),
+    apiFetch('/readings/?limit=50'),
+    apiFetch('/readings/stats'),
+    apiFetch('/alarms/'),
+  ]);
+
+  if (sensors  !== null) state.sensors  = sensors;
+  if (readings !== null) state.readings = readings;
+  if (stats    !== null) state.stats    = stats;
+  if (alarms   !== null) state.alarms   = alarms;
+
+  updateHeader();
+  updateSidebar();
+
+  const activePage = document.querySelector('.page.active')?.id;
+  if (activePage === 'page-dashboard') renderDashboard();
+  if (activePage === 'page-sensors')   renderSensors();
+  if (activePage === 'page-vpn-stats') renderVPN();
+  if (activePage === 'page-attacks')   renderSecurity();
+}
+
+// ── Header ─────────────────────────────────────────────────────
+function updateHeader() {
+  const n  = state.stats.sensors_active ?? 0;
+  const el = document.getElementById('global-vpn-status');
+  if (el) el.textContent = `${n} capteur${n !== 1 ? 's' : ''} protégé${n !== 1 ? 's' : ''}`;
+}
+
+// ── Sidebar ────────────────────────────────────────────────────
+function updateSidebar() {
+  const s   = state.stats;
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('stat-online',  s.sensors_active  ?? 0);
+  set('stat-offline', s.sensors_offline ?? 0);
+  set('stat-secured', s.sensors_active  ?? 0);
+  set('stat-total',   s.sensors_total   ?? 0);
+
+  // Real uptime from page load
+  const sec = Math.floor((Date.now() - state.startTime) / 1000);
+  const h   = Math.floor(sec / 3600);
+  const m   = Math.floor((sec % 3600) / 60);
+  const up  = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  set('vpn-uptime',      up);
+  set('vpn-uptime-card', up);
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function latestReading(sensorId) {
+  return state.readings.find(r => r.sensor_id === sensorId) || {};
+}
+
+function sensorValue(r) {
+  if (r.temperature != null) return { value: r.temperature, unit: '°C'  };
+  if (r.humidity    != null) return { value: r.humidity,    unit: '%'   };
+  if (r.pressure    != null) return { value: r.pressure,    unit: 'hPa' };
+  return { value: null, unit: '' };
+}
+
+function historyFor(sensorId) {
+  return state.readings
+    .filter(r => r.sensor_id === sensorId)
+    .map(r => r.temperature ?? r.humidity ?? r.pressure ?? 0)
+    .reverse();
+}
+
+function typeIcon(type) {
+  return type === 'humidity' ? '💧' : type === 'pressure' ? '🌬' : '🌡';
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return 'Jamais';
+  const diff = Math.floor((Date.now() - new Date(dateStr + 'Z')) / 1000);
+  if (diff < 10)   return 'À l\'instant';
+  if (diff < 60)   return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  return new Date(dateStr).toLocaleTimeString('fr-FR');
+}
+
+function batteryColor(b) {
+  if (b == null)  return 'var(--text-sub)';
+  if (b < 20)     return 'var(--danger)';
+  if (b < 50)     return 'var(--warn)';
+  return 'var(--accent2)';
+}
+
+// ── Sparkline ──────────────────────────────────────────────────
+function drawSparkline(id, data) {
+  const canvas = document.getElementById(id);
+  if (!canvas || data.length < 2) return;
   const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-
+  const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-
-  if (data.length < 2) return;
-
-  const range = maxVal - minVal || 1;
-  const points = data.map((v, i) => ({
+  const min = Math.min(...data) * 0.98;
+  const max = Math.max(...data) * 1.02;
+  const rng = max - min || 1;
+  const pts = data.map((v, i) => ({
     x: (i / (data.length - 1)) * w,
-    y: h - 2 - ((v - minVal) / range) * (h - 4),
+    y: h - 4 - ((v - min) / rng) * (h - 8),
   }));
-
-  // Draw gradient fill
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, 'rgba(0,200,224,0.4)');
-  gradient.addColorStop(1, 'rgba(0,200,224,0.05)');
-
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, 'rgba(0,200,224,0.3)');
+  g.addColorStop(1, 'rgba(0,200,224,0.02)');
   ctx.beginPath();
   ctx.moveTo(0, h);
-  points.forEach(p => ctx.lineTo(p.x, p.y));
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
   ctx.lineTo(w, h);
   ctx.closePath();
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = g;
   ctx.fill();
-
-  // Draw line
   ctx.beginPath();
-  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
   ctx.strokeStyle = 'rgba(0,200,224,0.9)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-}
-
-function drawVPNChartFull(canvasId, data, minVal, maxVal) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-
-  ctx.clearRect(0, 0, w, h);
-
-  if (data.length < 2) return;
-
-  const range = maxVal - minVal || 1;
-  const points = data.map((v, i) => ({
-    x: (i / (data.length - 1)) * w,
-    y: h - 8 - ((v - minVal) / range) * (h - 16),
-  }));
-
-  // Draw gradient fill
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, 'rgba(0,200,224,0.5)');
-  gradient.addColorStop(1, 'rgba(0,200,224,0.08)');
-
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  points.forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.lineTo(w, h);
-  ctx.closePath();
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  // Draw line
-  ctx.beginPath();
-  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = 'rgba(0,200,224,1)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Draw points
-  points.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,200,224,1)';
-    ctx.fill();
-  });
-}
-
-function updateVPNData() {
-  // Simulate VPN data changes
-  state.vpn.latency = Math.round((Math.random() * 20) + 8);
-  state.vpn.bandwidth = Math.round((Math.random() * 20) + 80);
-  state.vpn.cpu = Math.round(Math.random() * 8) + 1;
-
-  // Shift history and add new values
-  state.vpn.latencyHistory.push(state.vpn.latency);
-  state.vpn.bandwidthHistory.push(state.vpn.bandwidth);
-  state.vpn.cpuHistory.push(state.vpn.cpu);
-
-  if (state.vpn.latencyHistory.length > 20) state.vpn.latencyHistory.shift();
-  if (state.vpn.bandwidthHistory.length > 20) state.vpn.bandwidthHistory.shift();
-  if (state.vpn.cpuHistory.length > 20) state.vpn.cpuHistory.shift();
-
-  updateVPNStats();
-}
-
-function updateUI() {
-  renderDashboard();
-  renderSensors();
-  updateStats();
-  updateVPNStats();
-}
-
-function renderDashboard() {
-  const grid = document.getElementById('dashboard-grid');
-  grid.innerHTML = state.sensors.map((s, idx) => `
-    <div class="widget">
-      <div class="widget-header">
-        <div class="widget-title">${s.name}</div>
-        <div class="widget-icon">🌡</div>
-      </div>
-      <div class="widget-value" style="color: ${s.status === 'online' ? 'var(--accent)' : 'var(--danger)'};">${s.value}</div>
-      <div class="widget-unit">${s.unit} • IP: ${s.ip}</div>
-      <canvas id="sparkline-${idx}" class="sparkline-chart" data-values='${JSON.stringify(s.history)}'></canvas>
-      <div class="widget-status">
-        <div class="widget-status-dot ${s.status}"></div>
-        <span>${s.status === 'online' ? '● En ligne' : '✕ Hors ligne'} • ${s.vpnActive ? '🔒 VPN' : '🔓 Sans VPN'}</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: ${s.vpnActive ? '100%' : '0%'}"></div>
-      </div>
-      <button class="btn btn-primary" style="margin-top: 8px; padding: 6px;" onclick="toggleVPN('${s.id}')">
-        ${s.vpnActive ? '✓ VPN ON' : 'VPN OFF'}
-      </button>
-      <button class="btn btn-secondary" style="margin-top: 4px; padding: 6px;" onclick="removeSensor('${s.id}')">Supprimer</button>
-    </div>
-  `).join('');
-
-  // Draw sparklines
-  state.sensors.forEach((s, idx) => {
-    drawSparkline(`sparkline-${idx}`, s.history);
-  });
-}
-
-function drawSparkline(canvasId, data) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-
-  ctx.clearRect(0, 0, w, h);
-
-  if (data.length < 2) return;
-
-  const min = Math.min(...data) * 0.95;
-  const max = Math.max(...data) * 1.05;
-  const range = max - min || 1;
-
-  const points = data.map((v, i) => ({
-    x: (i / (data.length - 1)) * w,
-    y: h - 4 - ((v - min) / range) * (h - 8),
-  }));
-
-  // Draw gradient fill
-  const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, 'rgba(0,200,224,0.3)');
-  gradient.addColorStop(1, 'rgba(0,200,224,0.05)');
-
-  ctx.beginPath();
-  ctx.moveTo(0, h);
-  points.forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.lineTo(w, h);
-  ctx.closePath();
-  ctx.fillStyle = gradient;
-  ctx.fill();
-
-  // Draw line
-  ctx.beginPath();
-  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = 'rgba(0,200,224,0.8)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
-
-  // Draw points
-  points.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,200,224,1)';
-    ctx.fill();
-  });
 }
 
-function updateSensorData() {
-  state.sensors.forEach(s => {
-    // Simulate data changes
-    const change = (Math.random() - 0.5) * 0.5;
-    s.value = Math.round((s.value + change) * 10) / 10;
-    s.history.push(s.value);
-    if (s.history.length > 20) s.history.shift();
-  });
-
-  renderDashboard();
-}
-
-function renderSensors() {
-  const grid = document.getElementById('sensors-grid');
+// ── DASHBOARD PAGE ─────────────────────────────────────────────
+function renderDashboard() {
+  const grid = document.getElementById('dashboard-grid');
   if (!grid) return;
-  grid.innerHTML = state.sensors.map((s, idx) => `
-    <div class="widget">
-      <div class="widget-header">
-        <div class="widget-title">${s.id} • ${s.name}</div>
-        <div class="widget-icon">🌡</div>
-      </div>
-      <div class="widget-value" style="color: ${s.status === 'online' ? 'var(--accent)' : 'var(--danger)'};">${s.value}</div>
-      <div class="widget-unit">${s.unit} • IP: ${s.ip}</div>
-      <canvas id="sparkline-sensor-${idx}" class="sparkline-chart" data-values='${JSON.stringify(s.history)}'></canvas>
-      <div class="widget-status">
-        <div class="widget-status-dot ${s.status}"></div>
-        <span>${s.status === 'online' ? '● En ligne' : '✕ Hors ligne'}</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: ${s.vpnActive ? '100%' : '0%'}"></div>
-      </div>
-      <button class="btn btn-primary" style="margin-top: 8px; padding: 6px;" onclick="toggleVPN('${s.id}')">
-        ${s.vpnActive ? '✓ VPN ON' : 'VPN OFF'}
-      </button>
-      <button class="btn btn-secondary" style="margin-top: 4px; padding: 6px;" onclick="removeSensor('${s.id}')">Supprimer</button>
-    </div>
-  `).join('');
 
-  // Draw sparklines
-  state.sensors.forEach((s, idx) => {
-    drawSparkline(`sparkline-sensor-${idx}`, s.history);
-  });
-}
-
-function updateStats() {
-  const online = state.sensors.filter(s => s.status === 'online').length;
-  const offline = state.sensors.filter(s => s.status === 'offline').length;
-  const secured = state.sensors.filter(s => s.vpnActive).length;
-
-  document.getElementById('stat-online').textContent = online;
-  document.getElementById('stat-offline').textContent = offline;
-  document.getElementById('stat-secured').textContent = secured;
-  document.getElementById('stat-total').textContent = state.sensors.length;
-  document.getElementById('global-vpn-status').textContent = `${secured} capteur${secured !== 1 ? 's' : ''} protégé${secured !== 1 ? 's' : ''}`;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  SENSOR MANAGEMENT
-// ═══════════════════════════════════════════════════════════════
-
-function toggleVPN(sensorId) {
-  const sensor = state.sensors.find(s => s.id === sensorId);
-  if (sensor) {
-    sensor.vpnActive = !sensor.vpnActive;
-    updateUI();
-    addMessage('ai', `✓ VPN ${sensor.vpnActive ? 'activé' : 'désactivé'} pour ${sensor.name}.`);
-  }
-}
-
-function removeSensor(sensorId) {
-  state.sensors = state.sensors.filter(s => s.id !== sensorId);
-  updateUI();
-}
-
-function manualAddSensor() {
-  const name = document.getElementById('sensor-name').value.trim();
-  const ip = document.getElementById('sensor-ip').value.trim();
-
-  if (!name || !ip) {
-    addMessage('ai', '⚠ Veuillez remplir tous les champs.');
+  if (!state.sensors.length) {
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-sub)">
+        <div style="font-size:48px;margin-bottom:16px">📡</div>
+        <div style="font-size:16px;margin-bottom:8px">Aucun capteur connecté</div>
+        <div style="font-size:13px;margin-bottom:24px">
+          Ajoutez un capteur ou attendez que sensor_agent.py envoie des données MQTT
+        </div>
+        <button class="btn btn-primary" onclick="showPage('page-sensors')">
+          ➕ Ajouter un capteur
+        </button>
+      </div>`;
     return;
   }
 
-  const id = `IOT-${String(state.sensors.length + 1).padStart(2, '0')}`;
-  const baseValue = 20 + Math.random() * 30;
-  state.sensors.push({
-    id,
-    name,
-    ip,
-    vpnActive: false,
-    status: 'online',
-    value: Math.round(baseValue * 10) / 10,
-    unit: '°C',
-    history: [baseValue - 1, baseValue - 0.5, baseValue, baseValue + 0.5, baseValue],
-  });
-  clearSensorForm();
-  updateUI();
-  addMessage('ai', `✓ Capteur ${name} ajouté avec succès!`);
+  grid.innerHTML = state.sensors.map((s, idx) => {
+    const r              = latestReading(s.sensor_id);
+    const { value, unit} = sensorValue(r);
+    const online         = s.status === 'active';
+    const valColor       = online ? 'var(--accent2)' : 'var(--text-sub)';
+    const bat            = r.battery ?? null;
+    return `
+    <div class="widget">
+      <div class="widget-header">
+        <div class="widget-title">${s.sensor_id}</div>
+        <div class="widget-icon">${typeIcon(s.sensor_type)}</div>
+      </div>
+      <div class="widget-value" style="color:${valColor}">
+        ${value != null ? value.toFixed(1) : '—'}
+        <small style="font-size:16px;color:var(--text-sub)"> ${unit}</small>
+      </div>
+      <div class="widget-unit">
+        📍 ${s.ip_address || 'IP inconnue'}
+        ${bat != null ? `&nbsp;•&nbsp;<span style="color:${batteryColor(bat)}">🔋 ${bat}%</span>` : ''}
+      </div>
+      <canvas id="spark-d-${idx}" class="sparkline-chart" width="240" height="40"></canvas>
+      <div class="widget-status">
+        <div class="widget-status-dot ${online ? 'online' : 'offline'}"></div>
+        <span style="font-size:12px">${online ? '● En ligne' : '✕ Hors ligne'}&nbsp;🔒 VPN</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--text-sub)">${timeAgo(r.received_at)}</span>
+      </div>
+      <div class="progress-bar" style="margin-top:8px">
+        <div class="progress-fill" style="width:${online ? '100%' : '0%'}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  state.sensors.forEach((s, idx) => drawSparkline(`spark-d-${idx}`, historyFor(s.sensor_id)));
+}
+
+// ── SENSORS PAGE ───────────────────────────────────────────────
+function renderSensors() {
+  const tbody = document.getElementById('sensors-tbody');
+  const count = document.getElementById('sensor-count');
+  if (!tbody) return;
+
+  if (count) count.textContent = `${state.sensors.length} capteur(s)`;
+
+  if (!state.sensors.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="8" style="padding:48px;text-align:center;color:var(--text-sub)">
+        <div style="font-size:32px;margin-bottom:12px">📡</div>
+        <div>Aucun capteur enregistré</div>
+        <div style="font-size:12px;margin-top:6px">Utilisez le formulaire ci-dessus pour en ajouter un</div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = state.sensors.map(s => {
+    const r              = latestReading(s.sensor_id);
+    const { value, unit} = sensorValue(r);
+    const online         = s.status === 'active';
+    const bat            = r.battery ?? null;
+    const batColor       = bat == null ? 'var(--text-sub)' : bat < 20 ? 'var(--danger)' : bat < 50 ? 'var(--warn)' : 'var(--accent2)';
+    const statusDot      = online
+      ? `<span style="color:var(--accent2);font-weight:600">● En ligne</span>`
+      : `<span style="color:var(--danger);font-weight:600">✕ Hors ligne</span>`;
+
+    return `<tr style="border-bottom:1px solid var(--border2);transition:background .15s"
+      onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+      onmouseout="this.style.background='none'">
+      <td style="padding:14px 20px;font-weight:600;font-family:var(--mono)">${s.sensor_id}</td>
+      <td style="padding:14px 16px">${typeIcon(s.sensor_type)} ${s.sensor_type}</td>
+      <td style="padding:14px 16px;font-family:var(--mono);font-size:12px;color:var(--text-sub)">${s.ip_address || '—'}</td>
+      <td style="padding:14px 16px;font-weight:700;color:${online ? 'var(--accent2)' : 'var(--text-sub)'}">
+        ${value != null ? value.toFixed(1) + ' ' + unit : '—'}
+      </td>
+      <td style="padding:14px 16px;color:${batColor}">
+        ${bat != null ? '🔋 ' + bat + '%' : '—'}
+      </td>
+      <td style="padding:14px 16px">${statusDot}</td>
+      <td style="padding:14px 16px;font-size:12px;color:var(--text-sub)">${timeAgo(r.received_at)}</td>
+      <td style="padding:14px 16px">
+        <button onclick="deleteSensor('${s.sensor_id}')"
+          style="background:rgba(255,68,102,0.1);border:1px solid rgba(255,68,102,0.3);
+          border-radius:6px;color:#ff4466;padding:5px 12px;cursor:pointer;font-size:12px;
+          transition:all .15s"
+          onmouseover="this.style.background='rgba(255,68,102,0.25)'"
+          onmouseout="this.style.background='rgba(255,68,102,0.1)'">
+          🗑 Supprimer
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── VPN PAGE ───────────────────────────────────────────────────
+function renderVPN() {
+  const used = state.stats.vpn_used     ?? 0;
+  const max  = state.stats.vpn_capacity ?? 10;
+  const set  = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+
+  set('vpn-status-card',    used > 0 ? 'ACTIF' : 'EN ATTENTE');
+  set('vpn-protocol-card',  'WireGuard');
+  set('vpn-tunnels-card',   used);
+
+  // Replace fake metric values with honest labels
+  set('vpn-latency-card',   'N/A');
+  set('vpn-bandwidth-card', 'N/A');
+  set('vpn-cpu-card',       'N/A');
+
+  // Replace connection log with real tunnel list
+  const logWidgets = document.querySelectorAll('#page-vpn-stats .widget');
+  const logWidget  = logWidgets[logWidgets.length - 1];
+  if (logWidget) {
+    const active = state.sensors.filter(s => s.status === 'active');
+    const inner  = logWidget.querySelector('div > div') || logWidget.querySelector('div');
+    if (inner) {
+      inner.innerHTML = !active.length
+        ? `<div style="text-align:center;padding:20px;color:var(--text-sub)">Aucun tunnel actif</div>`
+        : active.map(s => {
+            const r = latestReading(s.sensor_id);
+            return `
+            <div style="display:flex;justify-content:space-between;align-items:center;
+              padding:10px;background:rgba(0,224,150,0.07);border-radius:4px;
+              border-left:3px solid var(--accent2);margin-bottom:8px">
+              <div>
+                <span style="font-size:13px;font-weight:600;color:var(--accent2)">✓ ${s.sensor_id}</span>
+                <span style="font-size:11px;color:var(--text-sub);margin-left:12px">
+                  ${s.ip_address || 'N/A'} • ${s.sensor_type} • WireGuard • ChaCha20-Poly1305
+                </span>
+              </div>
+              <span style="font-size:11px;color:var(--text-sub)">${timeAgo(r.received_at)}</span>
+            </div>`;
+          }).join('');
+    }
+  }
+}
+
+// ── SECURITY PAGE ──────────────────────────────────────────────
+function renderSecurity() {
+  const log = document.getElementById('attack-log');
+  if (!log) return;
+
+  if (!state.alarms.length) {
+    log.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div>Aucune alarme active</div>
+      </div>`;
+    return;
+  }
+
+  log.innerHTML = state.alarms.map(a => {
+    const color = a.severity === 'critical' ? 'var(--danger)'
+                : a.severity === 'high'     ? 'var(--warn)'
+                :                             'var(--accent)';
+    return `
+    <div class="log-row" style="border-left:3px solid ${color}">
+      <span class="log-time">${new Date(a.created_at).toLocaleTimeString('fr-FR')}</span>
+      <span class="log-type" style="color:${color}">${a.severity.toUpperCase()}</span>
+      <span class="log-desc">${a.message}</span>
+      <span class="log-target">${a.sensor_id || '—'}</span>
+      <span class="log-result blocked" style="cursor:pointer" onclick="resolveAlarm(${a.id})">
+        ✓ RÉSOUDRE
+      </span>
+    </div>`;
+  }).join('');
+}
+
+// ── Navigation ─────────────────────────────────────────────────
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById(pageId);
+  if (page) page.classList.add('active');
+  const map  = { 'page-dashboard': 0, 'page-sensors': 1, 'page-vpn-stats': 2, 'page-attacks': 3 };
+  const navs = document.querySelectorAll('.nav-item');
+  const idx  = map[pageId];
+  if (idx !== undefined && navs[idx]) navs[idx].classList.add('active');
+  refreshAll();
+}
+
+// ── Add sensor ─────────────────────────────────────────────────
+async function addSensorFromForm() {
+  const name = document.getElementById('sensor-name')?.value?.trim();
+  const ip   = document.getElementById('sensor-ip')?.value?.trim();
+  const type = document.getElementById('sensor-type')?.value || 'temperature';
+  if (!name || !ip) { showToast('Remplissez l\'ID et l\'adresse IP', 'error'); return; }
+
+  const btn = document.querySelector('#page-sensors .btn-primary');
+  if (btn) { btn.textContent = 'Ajout...'; btn.disabled = true; }
+
+  const result = await apiPost('/sensors/onboard', { sensor_id: name, ip_address: ip, sensor_type: type });
+
+  if (btn) { btn.textContent = 'Ajouter'; btn.disabled = false; }
+
+  if (result?.ok) {
+    showToast(`✅ ${name} ajouté (${result.ping})`, 'success');
+    document.getElementById('sensor-name').value = '';
+    document.getElementById('sensor-ip').value   = '';
+    await refreshAll();
+  } else {
+    showToast(`❌ ${result?.detail || 'Erreur inconnue'}`, 'error');
+  }
 }
 
 function clearSensorForm() {
   document.getElementById('sensor-name').value = '';
-  document.getElementById('sensor-ip').value = '';
+  document.getElementById('sensor-ip').value   = '';
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ATTACKS
-// ═══════════════════════════════════════════════════════════════
+function manualAddSensor() { addSensorFromForm(); }
 
-const ATTACK_TYPES = [
-  { type: 'ARP', desc: 'Man-in-the-middle', cls: 'arp' },
-  { type: 'NMAP', desc: 'Scan découverte', cls: 'nmap' },
-  { type: 'DOS', desc: 'Saturation réseau', cls: 'dos' },
-  { type: 'WSHARK', desc: 'Capture trafic', cls: 'wshark' },
-];
-
-function addAttack(type, desc, target, blocked) {
-  const now = new Date().toLocaleTimeString('fr-FR', { hour12: false });
-  state.attacks.unshift({ time: now, type, desc, target, blocked });
-
-  const list = document.getElementById('attack-log');
-  if (list.querySelector('.empty-state')) {
-    list.innerHTML = '';
+// ── Delete sensor ──────────────────────────────────────────────
+async function deleteSensor(sensorId) {
+  if (!confirm(`Supprimer ${sensorId} définitivement ?`)) return;
+  const result = await apiDelete(`/sensors/${sensorId}`);
+  if (result?.ok) {
+    showToast(`🗑 ${sensorId} supprimé`, 'success');
+    await refreshAll();
+  } else {
+    showToast(`❌ ${result?.detail || 'Erreur'}`, 'error');
   }
-
-  const row = `<div class="log-row">
-    <span class="log-time">${now}</span>
-    <span class="log-type ${type.toLowerCase()}">${type}</span>
-    <span class="log-desc">${desc}</span>
-    <span class="log-target">${target}</span>
-    <span class="log-result ${blocked ? 'blocked' : 'success'}">${blocked ? 'BLOQUÉ' : 'SUCCÈS'}</span>
-  </div>`;
-
-  list.insertAdjacentHTML('afterbegin', row);
-  if (state.attacks.length > 50) list.removeChild(list.lastChild);
 }
 
-function simulateAttack() {
-  const t = ATTACK_TYPES[Math.floor(Math.random() * ATTACK_TYPES.length)];
-  const vpnOn = state.sensors.some(s => s.vpnActive);
-  const blocked = vpnOn ? (Math.random() > 0.15) : false;
-  const targets = state.sensors.map(s => s.ip);
-  const target = targets.length > 0 ? targets[Math.floor(Math.random() * targets.length)] : '10.0.0.0';
-  addAttack(t.type, t.desc, target, blocked);
+// ── Resolve alarm ──────────────────────────────────────────────
+async function resolveAlarm(alarmId) {
+  const result = await apiPut(`/alarms/${alarmId}/resolve`);
+  if (result?.ok) {
+    showToast('✅ Alarme résolue', 'success');
+    await refreshAll();
+  } else {
+    showToast('❌ Erreur résolution', 'error');
+  }
+}
+
+// ── Simulate attack → creates real alarm in DB ─────────────────
+async function simulateAttack() {
+  const attacks = [
+    { severity: 'high',     message: 'Tentative de connexion non autorisée sur port 1883' },
+    { severity: 'medium',   message: 'Scan de ports détecté depuis 192.168.0.99' },
+    { severity: 'critical', message: 'Injection MQTT sur topic iot/sensors/#' },
+    { severity: 'low',      message: 'Connexion refusée — certificat invalide' },
+  ];
+  const a      = attacks[Math.floor(Math.random() * attacks.length)];
+  const sensor = state.sensors[0]?.sensor_id || 'UNKNOWN';
+  const result = await apiPost('/alarms/', { sensor_id: sensor, severity: a.severity, message: a.message });
+  if (result?.ok) {
+    showToast(`⚡ Attaque simulée (${a.severity})`, 'success');
+    await refreshAll();
+  }
 }
 
 function clearAttacks() {
-  state.attacks = [];
-  document.getElementById('attack-log').innerHTML = '<div class="empty-state"><div class="empty-icon">⌚</div><div>En attente d\'attaques...</div></div>';
+  const log = document.getElementById('attack-log');
+  if (log) log.innerHTML = `<div class="empty-state"><div class="empty-icon">⌚</div><div>En attente d'attaques...</div></div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  CHAT / AI
-// ═══════════════════════════════════════════════════════════════
+// ── AI Chat ────────────────────────────────────────────────────
+function toggleAIPanel() { document.getElementById('ai-panel')?.classList.toggle('active'); }
 
 function addMessage(role, text) {
-  const messagesDiv = document.getElementById('messages');
-  const msgEl = document.createElement('div');
-  msgEl.className = `message ${role}`;
-  msgEl.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
-  messagesDiv.appendChild(msgEl);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  const div = document.getElementById('messages');
+  if (!div) return;
+  const el = document.createElement('div');
+  el.className = `message ${role}`;
+  el.innerHTML = `<div class="message-bubble">${text}</div>`;
+  div.appendChild(el);
+  div.scrollTop = div.scrollHeight;
 }
 
 async function sendMessage() {
   const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
+  const msg   = input?.value?.trim();
   if (!msg) return;
-
-  if (!state.apiKey) {
-    addMessage('ai', 'Configurer d\'abord votre clé API pour utiliser l\'assistant.');
-    return;
-  }
-
   addMessage('user', msg);
   input.value = '';
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': state.apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-20250805',
-        max_tokens: 400,
-        system: `Tu es un assistant de gestion IoT VPN. Tu aides avec la sécurité et la gestion des capteurs IoT.
-Réponds en français, sois concis et amical.`,
-        messages: [{ role: 'user', content: msg }],
-      }),
-    });
+  const result = await apiPost('/ai/query', { message: msg });
+  if (result?.response) {
+    addMessage('ai', result.response);
+    return;
+  }
 
-    if (!response.ok) throw new Error('Erreur API');
-    const data = await response.json();
-    addMessage('ai', data.content[0].text);
-
-  } catch (err) {
-    addMessage('ai', `⚠ Erreur : ${err.message}`);
+  // Fallback using real state
+  const m = msg.toLowerCase();
+  const s = state.stats;
+  if (m.includes('capteur') || m.includes('sensor')) {
+    addMessage('ai', `${s.sensors_active ?? 0} capteur(s) actif(s) sur ${s.sensors_total ?? 0} enregistrés.`);
+  } else if (m.includes('vpn') || m.includes('tunnel')) {
+    addMessage('ai', `VPN WireGuard actif. ${s.vpn_used ?? 0} tunnel(s) sur ${s.vpn_capacity ?? 10} max.`);
+  } else if (m.includes('alarme') || m.includes('alerte')) {
+    addMessage('ai', `${state.alarms.length} alarme(s) non résolue(s).`);
+  } else if (m.includes('temp')) {
+    const r = state.readings.find(r => r.temperature != null);
+    addMessage('ai', r ? `Dernière température: ${r.temperature}°C (${r.sensor_id})` : 'Aucune donnée de température.');
+  } else {
+    addMessage('ai', `Système opérationnel. ${s.sensors_active ?? 0} capteur(s) connecté(s) via WireGuard.`);
   }
 }
-
-// ═══════════════════════════════════════════════════════════════
-//  API KEY MODAL
-// ═══════════════════════════════════════════════════════════════
 
 function saveAPIKey() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (key) {
-    state.apiKey = key;
-    localStorage.setItem('anthropic-api-key', key);
-    document.getElementById('api-modal').classList.remove('active');
-    addMessage('ai', '✓ API configurée ! Prêt à vous aider.');
-  }
+  document.getElementById('api-modal')?.classList.remove('active');
+  addMessage('ai', '✓ Prêt à vous aider !');
 }
-
 function skipAPIKey() {
-  document.getElementById('api-modal').classList.remove('active');
-  addMessage('ai', 'D\'accord ! Comment puis-je vous aider ?');
+  document.getElementById('api-modal')?.classList.remove('active');
+  addMessage('ai', 'Bonjour ! Je surveille votre réseau IoT. Posez-moi vos questions.');
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  EVENTS
-// ═══════════════════════════════════════════════════════════════
+// ── Toast ──────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  document.getElementById('toast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'toast';
+  t.textContent = msg;
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;
+    padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;
+    background:${type === 'error' ? '#ff4466' : '#00e096'};
+    color:${type === 'error' ? 'white' : '#0a0e14'};
+    box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:toastIn .3s ease`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
 
-document.getElementById('chat-input').addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') sendMessage();
-});
+// ── Wire nav ───────────────────────────────────────────────────
+function wireNav() {
+  const pages = ['page-dashboard','page-sensors','page-vpn-stats','page-attacks'];
+  document.querySelectorAll('.nav-item').forEach((el, i) => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => showPage(pages[i]));
+  });
+}
 
-// ═══════════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════════
-
+// ── Boot ───────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  updateUI();
-
-  if (!state.apiKey) {
-    document.getElementById('api-modal').classList.add('active');
-  } else {
-    addMessage('ai', 'Bienvenue ! Comment puis-je vous aider ?');
-  }
-
-  setTimeout(() => addAttack('NMAP', 'Scan découverte', '10.0.0.0/24', false), 800);
-  setTimeout(() => addAttack('WSHARK', 'Capture trafic', '192.168.1.10', false), 1200);
-
-  // Live data updates - refresh charts every 2.5 seconds
-  setInterval(() => {
-    updateSensorData();
-    updateVPNData();
-  }, 2500);
+  wireNav();
+  document.getElementById('chat-input')?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+  document.getElementById('api-modal')?.classList.remove('active');
+  addMessage('ai', 'Bonjour ! Système opérationnel. Posez-moi vos questions sur les capteurs ou le VPN.');
+  refreshAll();
+  setInterval(refreshAll, 3000);
 });
-</script>
 
-</body>
-</html>
+const _s = document.createElement('style');
+_s.textContent = `@keyframes toastIn{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}`;
+document.head.appendChild(_s);
+</script>
+  wireNav();
+
+  // Chat enter key
+  document.getElementById('chat-input')?.addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // Skip API modal - we use local AI
+  document.getElementById('api-modal')?.classList.remove('active');
+  addMessage('ai', 'Bonjour ! Système IoT opérationnel. Posez-moi vos questions.');
+
+  // Initial load then poll every 3s
+  refreshAll();
+  setInterval(refreshAll, 3000);
+});
+
+// Slide-in animation
+const style = document.createElement('style');
+style.textContent = `@keyframes slideIn { from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }`;
+document.head.appendChild(style);
+</script>
